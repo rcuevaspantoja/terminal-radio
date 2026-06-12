@@ -34,6 +34,18 @@ def test_mpv_install_steps_termux(monkeypatch: pytest.MonkeyPatch) -> None:
     assert steps[0].command[:3] == ["pkg", "install", "-y"]
 
 
+def test_termux_pip_extra_index_args(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(deps, "is_termux", lambda: True)
+    args = deps.termux_pip_extra_index_args()
+    assert "--extra-index-url" in args
+    assert "termux-user-repository.github.io" in " ".join(args)
+
+
+def test_termux_pip_extra_index_args_empty_off_termux(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(deps, "is_termux", lambda: False)
+    assert deps.termux_pip_extra_index_args() == []
+
+
 def test_mpv_install_steps_windows_prefers_scoop(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(sys, "platform", "win32")
     monkeypatch.setattr(deps, "is_termux", lambda: False)

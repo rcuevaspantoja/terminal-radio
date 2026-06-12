@@ -622,6 +622,69 @@ def ensure_mpv() -> bool:
     return False
 
 
+# Wheels for packages that cannot compile on Termux (e.g. pydantic-core on Python 3.13).
+TERMUX_PYPI_EXTRA_INDEXES: tuple[str, ...] = (
+    "https://termux-user-repository.github.io/pypi/",
+    "https://eutalix.github.io/android-pydantic-core/",
+)
+
+
+def termux_pip_extra_index_args() -> list[str]:
+    """Extra pip indexes with pre-built Android wheels."""
+    if not is_termux():
+        return []
+    args: list[str] = []
+    for url in TERMUX_PYPI_EXTRA_INDEXES:
+        args.extend(["--extra-index-url", url])
+    return args
+
+
+def ensure_termux_python_wheels(python: Path) -> bool:
+    """
+    Pre-install pydantic-core from community wheels.
+
+    PyPI often has no wheel for aarch64-linux-android; pip then tries to
+    compile via maturin/Rust and fails on Termux.
+    """
+    if not is_termux():
+        return True
+
+    print("\n-> Termux: install pydantic-core (pre-built wheel)")
+    for index in TERMUX_PYPI_EXTRA_INDEXES:
+        cmd = [
+            str(python),
+            "-m",
+            "pip",
+            "install",
+            "--prefer-binary",
+            "--extra-index-url",
+            index,
+            "pydantic-core",
+        ]
+        print(f"  $ {' '.join(cmd)}")
+        result = subprocess.run(cmd, check=False)
+        if result.returncode == 0:
+            print("  [ok] pydantic-core")
+            return True
+
+    print_termux_pip_failure_hint()
+    return False
+
+
+def print_termux_pip_failure_hint() -> None:
+    print(
+        "\n  [error] Could not install pydantic-core on Termux.\n"
+        "\n  Try manually (pick one index):\n"
+        "    pip install pydantic-core "
+        "--extra-index-url https://termux-user-repository.github.io/pypi/\n"
+        "    pip install pydantic-core "
+        "--extra-index-url https://eutalix.github.io/android-pydantic-core/\n"
+        "\n  Then re-run: python scripts/install.py\n"
+        "\n  Do not run `pip install --upgrade pip` on Termux "
+        "(breaks the python-pip package).\n"
+    )
+
+
 def _ok(fail: bool) -> str:
     return "OK" if not fail else "FALTA"
 
@@ -652,4 +715,10 @@ def check_report() -> str:
             lines.append(f"  {' '.join(step.command)}")
         if not mpv_install_steps():
             lines.append(mpv_manual_instructions())
+    if is_termux():
+        lines.append("")
+        lines.append("Termux pip")
+        lines.append("  pydantic-core needs a pre-built wheel (see TUR / Eutalix indexes)")
+        for url in TERMUX_PYPI_EXTRA_INDEXES:
+            lines.append(f"  --extra-index-url {url}")
     return "\n".join(lines)

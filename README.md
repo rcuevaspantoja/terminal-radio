@@ -49,6 +49,28 @@ On Ubuntu 23.04+ and similar distros, the installer creates a **venv** automatic
 
 **WSL** with the repo under `/mnt/c/...`: the venv lives at `~/.local/share/terminal-radio/venv` (cannot sit on the Windows mount).
 
+### Termux (Android)
+
+```bash
+pkg update && pkg upgrade
+pkg install python mpv git
+git clone <repo-url> terminal-radio
+cd terminal-radio
+python scripts/install.py
+radio
+```
+
+The installer pulls **pre-built wheels** for `pydantic-core` from the [Termux User Repository](https://termux-user-repository.github.io/pypi/) (and a fallback index). PyPI has no wheel for `aarch64-linux-android` on Python 3.13, so a plain `pip install` tries to compile Rust and fails.
+
+If install still fails, run manually then retry:
+
+```bash
+pip install pydantic-core --extra-index-url https://termux-user-repository.github.io/pypi/
+python scripts/install.py
+```
+
+Do **not** run `pip install --upgrade pip` on Termux — it breaks the `python-pip` package.
+
 ---
 
 ## Installation
