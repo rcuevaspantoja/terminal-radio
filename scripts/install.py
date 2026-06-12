@@ -59,6 +59,9 @@ def install_app(editable: bool = True) -> tuple[bool, Path, Path]:
         return False, python, venv_dir
 
     cmd = [str(python), "-m", "pip", "install", *termux_pip_install_args()]
+    if is_termux():
+        # Runtime deps were installed above; avoid re-resolving pydantic-core.
+        cmd.append("--no-deps")
     if editable:
         cmd.append("-e")
     cmd.append(str(REPO_ROOT))

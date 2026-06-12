@@ -643,16 +643,35 @@ def termux_pip_install_args() -> list[str]:
     """
     Pip flags for Termux.
 
-    --no-build-isolation is required: otherwise pip rebuilds pydantic-core in an
-    isolated env even when it is already installed system-wide.
+    --no-build-isolation: use pydantic-core already on disk instead of an
+    isolated build env.
+    --only-binary pydantic-core: never download the sdist (needs maturin/Rust).
     """
     if not is_termux():
         return []
     return [
         "--no-build-isolation",
         "--prefer-binary",
+        "--only-binary",
+        "pydantic-core",
         *termux_pip_extra_index_args(),
     ]
+
+
+def _termux_pip_install(
+    python: Path,
+    *packages: str,
+    no_deps: bool = False,
+) -> bool:
+    if not packages:
+        return True
+    cmd = [str(python), "-m", "pip", "install", *termux_pip_install_args()]
+    if no_deps:
+        cmd.append("--no-deps")
+    cmd.extend(packages)
+    print(f"  $ {' '.join(cmd)}")
+    result = subprocess.run(cmd, check=False)
+    return result.returncode == 0
 
 
 def _python_can_import(python: Path, module: str) -> bool:
@@ -687,6 +706,8 @@ def ensure_termux_python_wheels(python: Path) -> bool:
             "install",
             "--no-build-isolation",
             "--prefer-binary",
+            "--only-binary",
+            "pydantic-core",
             "--extra-index-url",
             index,
             "pydantic-core",
@@ -701,10 +722,13 @@ def ensure_termux_python_wheels(python: Path) -> bool:
     return False
 
 
-TERMUX_APP_PIP_DEPS: tuple[str, ...] = (
-    "httpx>=0.27.0",
-    "pydantic-settings>=2.3.0",
-    "textual>=0.80.0",
+# (import_name, pip_spec, no_deps) — install in order; pydantic before settings.
+TERMUX_APP_PIP_PACKAGES: tuple[tuple[str, str, bool], ...] = (
+    ("pydantic", "pydantic>=2.3.0", False),
+    ("pydantic_settings", "pydantic-settings>=2.3.0", True),
+    ("httpx", "httpx>=0.27.0", False),
+    ("textual", "textual>=0.80.0", False),
+    ("hatchling", "hatchling", False),
 )
 
 
@@ -716,21 +740,16 @@ def ensure_termux_app_dependencies(python: Path) -> bool:
         return False
 
     print("\n-> Termux: install Python dependencies")
-    cmd = [
-        str(python),
-        "-m",
-        "pip",
-        "install",
-        *termux_pip_install_args(),
-        *TERMUX_APP_PIP_DEPS,
-    ]
-    print(f"  $ {' '.join(cmd)}")
-    result = subprocess.run(cmd, check=False)
-    if result.returncode != 0:
-        print("  [error] Failed to install Python dependencies on Termux")
-        print_termux_pip_failure_hint()
-        return False
-    print("  [ok] dependencies")
+    for import_name, spec, no_deps in TERMUX_APP_PIP_PACKAGES:
+        if _python_can_import(python, import_name):
+            print(f"  [ok] {import_name} (already installed)")
+            continue
+        if not _termux_pip_install(python, spec, no_deps=no_deps):
+            print(f"  [error] Failed to install {spec} on Termux")
+            print_termux_pip_failure_hint()
+            return False
+        print(f"  [ok] {spec}")
+
     return True
 
 

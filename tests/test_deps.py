@@ -53,6 +53,8 @@ def test_termux_pip_install_args_includes_no_build_isolation(
     args = deps.termux_pip_install_args()
     assert "--no-build-isolation" in args
     assert "--prefer-binary" in args
+    assert "--only-binary" in args
+    assert "pydantic-core" in args
     assert "--extra-index-url" in args
 
 
@@ -67,6 +69,31 @@ def test_ensure_termux_python_wheels_skips_when_importable(
 
     monkeypatch.setattr(deps.subprocess, "run", fail_pip)
     assert deps.ensure_termux_python_wheels(tmp_path / "python") is True
+
+
+def test_ensure_termux_app_dependencies_uses_no_deps_for_settings(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(deps, "is_termux", lambda: True)
+    installed: list[str] = []
+
+    def fake_import(_python: Path, module: str) -> bool:
+        return module == "pydantic_core"
+
+    def fake_run(cmd, check=False):
+        installed.append(" ".join(cmd))
+        class Result:
+            returncode = 0
+
+        return Result()
+
+    monkeypatch.setattr(deps, "_python_can_import", fake_import)
+    monkeypatch.setattr(deps, "ensure_termux_python_wheels", lambda _py: True)
+    monkeypatch.setattr(deps.subprocess, "run", fake_run)
+
+    assert deps.ensure_termux_app_dependencies(tmp_path / "python") is True
+    settings_cmd = next(c for c in installed if "pydantic-settings" in c)
+    assert "--no-deps" in settings_cmd
 
 
 def test_mpv_install_steps_windows_prefers_scoop(monkeypatch: pytest.MonkeyPatch) -> None:
