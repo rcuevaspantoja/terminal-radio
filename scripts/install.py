@@ -34,12 +34,12 @@ def install_app(editable: bool = True) -> tuple[bool, Path, Path]:
     """
     from terminal_radio.platform.deps import (
         default_venv_dir,
-        ensure_termux_python_wheels,
+        ensure_termux_app_dependencies,
         ensure_venv,
         is_externally_managed,
         is_termux,
         print_termux_pip_failure_hint,
-        termux_pip_extra_index_args,
+        termux_pip_install_args,
     )
 
     python = Path(sys.executable)
@@ -55,10 +55,10 @@ def install_app(editable: bool = True) -> tuple[bool, Path, Path]:
             print(f"  [error] {exc}")
             return False, Path(sys.executable), venv_dir
 
-    if is_termux() and not ensure_termux_python_wheels(python):
+    if is_termux() and not ensure_termux_app_dependencies(python):
         return False, python, venv_dir
 
-    cmd = [str(python), "-m", "pip", "install", *termux_pip_extra_index_args()]
+    cmd = [str(python), "-m", "pip", "install", *termux_pip_install_args()]
     if editable:
         cmd.append("-e")
     cmd.append(str(REPO_ROOT))

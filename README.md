@@ -60,12 +60,20 @@ python scripts/install.py
 radio
 ```
 
-The installer pulls **pre-built wheels** for `pydantic-core` from the [Termux User Repository](https://termux-user-repository.github.io/pypi/) (and a fallback index). PyPI has no wheel for `aarch64-linux-android` on Python 3.13, so a plain `pip install` tries to compile Rust and fails.
+The installer uses **pre-built wheels** for `pydantic-core` (from the [Termux User Repository](https://termux-user-repository.github.io/pypi/) and a fallback index) and installs with `--no-build-isolation`. PyPI has no wheel for `aarch64-linux-android` on Python 3.13; without that flag, pip rebuilds `pydantic-core` in an isolated env and tries to compile Rust even when the wheel is already installed.
 
-If install still fails, run manually then retry:
+If install still fails, update the repo and retry:
 
 ```bash
-pip install pydantic-core --extra-index-url https://termux-user-repository.github.io/pypi/
+git pull
+python scripts/install.py
+```
+
+Or install the wheel manually, then run the installer again:
+
+```bash
+pip install --no-build-isolation pydantic-core \
+  --extra-index-url https://eutalix.github.io/android-pydantic-core/
 python scripts/install.py
 ```
 

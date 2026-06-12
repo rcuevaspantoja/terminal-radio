@@ -46,6 +46,29 @@ def test_termux_pip_extra_index_args_empty_off_termux(monkeypatch: pytest.Monkey
     assert deps.termux_pip_extra_index_args() == []
 
 
+def test_termux_pip_install_args_includes_no_build_isolation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(deps, "is_termux", lambda: True)
+    args = deps.termux_pip_install_args()
+    assert "--no-build-isolation" in args
+    assert "--prefer-binary" in args
+    assert "--extra-index-url" in args
+
+
+def test_ensure_termux_python_wheels_skips_when_importable(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(deps, "is_termux", lambda: True)
+    monkeypatch.setattr(deps, "_python_can_import", lambda _py, _mod: True)
+
+    def fail_pip(*_args, **_kwargs):
+        raise AssertionError("pip should not run when pydantic_core is importable")
+
+    monkeypatch.setattr(deps.subprocess, "run", fail_pip)
+    assert deps.ensure_termux_python_wheels(tmp_path / "python") is True
+
+
 def test_mpv_install_steps_windows_prefers_scoop(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(sys, "platform", "win32")
     monkeypatch.setattr(deps, "is_termux", lambda: False)

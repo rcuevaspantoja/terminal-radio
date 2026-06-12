@@ -639,6 +639,31 @@ def termux_pip_extra_index_args() -> list[str]:
     return args
 
 
+def termux_pip_install_args() -> list[str]:
+    """
+    Pip flags for Termux.
+
+    --no-build-isolation is required: otherwise pip rebuilds pydantic-core in an
+    isolated env even when it is already installed system-wide.
+    """
+    if not is_termux():
+        return []
+    return [
+        "--no-build-isolation",
+        "--prefer-binary",
+        *termux_pip_extra_index_args(),
+    ]
+
+
+def _python_can_import(python: Path, module: str) -> bool:
+    result = subprocess.run(
+        [str(python), "-c", f"import {module}"],
+        capture_output=True,
+        check=False,
+    )
+    return result.returncode == 0
+
+
 def ensure_termux_python_wheels(python: Path) -> bool:
     """
     Pre-install pydantic-core from community wheels.
@@ -649,6 +674,10 @@ def ensure_termux_python_wheels(python: Path) -> bool:
     if not is_termux():
         return True
 
+    if _python_can_import(python, "pydantic_core"):
+        print("\n-> Termux: pydantic-core already installed")
+        return True
+
     print("\n-> Termux: install pydantic-core (pre-built wheel)")
     for index in TERMUX_PYPI_EXTRA_INDEXES:
         cmd = [
@@ -656,6 +685,7 @@ def ensure_termux_python_wheels(python: Path) -> bool:
             "-m",
             "pip",
             "install",
+            "--no-build-isolation",
             "--prefer-binary",
             "--extra-index-url",
             index,
@@ -671,15 +701,48 @@ def ensure_termux_python_wheels(python: Path) -> bool:
     return False
 
 
+TERMUX_APP_PIP_DEPS: tuple[str, ...] = (
+    "httpx>=0.27.0",
+    "pydantic-settings>=2.3.0",
+    "textual>=0.80.0",
+)
+
+
+def ensure_termux_app_dependencies(python: Path) -> bool:
+    """Install runtime deps on Termux before editable app install."""
+    if not is_termux():
+        return True
+    if not ensure_termux_python_wheels(python):
+        return False
+
+    print("\n-> Termux: install Python dependencies")
+    cmd = [
+        str(python),
+        "-m",
+        "pip",
+        "install",
+        *termux_pip_install_args(),
+        *TERMUX_APP_PIP_DEPS,
+    ]
+    print(f"  $ {' '.join(cmd)}")
+    result = subprocess.run(cmd, check=False)
+    if result.returncode != 0:
+        print("  [error] Failed to install Python dependencies on Termux")
+        print_termux_pip_failure_hint()
+        return False
+    print("  [ok] dependencies")
+    return True
+
+
 def print_termux_pip_failure_hint() -> None:
     print(
-        "\n  [error] Could not install pydantic-core on Termux.\n"
-        "\n  Try manually (pick one index):\n"
-        "    pip install pydantic-core "
+        "\n  [error] Python dependency install failed on Termux.\n"
+        "\n  If pydantic-core is missing, try one index:\n"
+        "    pip install --no-build-isolation pydantic-core "
         "--extra-index-url https://termux-user-repository.github.io/pypi/\n"
-        "    pip install pydantic-core "
+        "    pip install --no-build-isolation pydantic-core "
         "--extra-index-url https://eutalix.github.io/android-pydantic-core/\n"
-        "\n  Then re-run: python scripts/install.py\n"
+        "\n  Then: git pull && python scripts/install.py\n"
         "\n  Do not run `pip install --upgrade pip` on Termux "
         "(breaks the python-pip package).\n"
     )
