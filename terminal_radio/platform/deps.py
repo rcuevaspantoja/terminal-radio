@@ -729,6 +729,7 @@ TERMUX_APP_PIP_PACKAGES: tuple[tuple[str, str, bool], ...] = (
     ("httpx", "httpx>=0.27.0", False),
     ("textual", "textual>=0.80.0", False),
     ("hatchling", "hatchling", False),
+    ("editables", "editables", False),
 )
 
 

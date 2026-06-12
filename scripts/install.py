@@ -38,7 +38,6 @@ def install_app(editable: bool = True) -> tuple[bool, Path, Path]:
         ensure_venv,
         is_externally_managed,
         is_termux,
-        print_termux_pip_failure_hint,
         termux_pip_install_args,
     )
 
@@ -58,11 +57,19 @@ def install_app(editable: bool = True) -> tuple[bool, Path, Path]:
     if is_termux() and not ensure_termux_app_dependencies(python):
         return False, python, venv_dir
 
+    # Editable installs need the `editables` package (often missing on Termux).
+    use_editable = editable and not is_termux()
+    if editable and is_termux():
+        print(
+            "\n-> Termux: instalacion normal (sin -e; editable requiere "
+            "el paquete editables)"
+        )
+
     cmd = [str(python), "-m", "pip", "install", *termux_pip_install_args()]
     if is_termux():
         # Runtime deps were installed above; avoid re-resolving pydantic-core.
         cmd.append("--no-deps")
-    if editable:
+    if use_editable:
         cmd.append("-e")
     cmd.append(str(REPO_ROOT))
     print("\n-> Instalar Terminal Radio")
@@ -71,7 +78,11 @@ def install_app(editable: bool = True) -> tuple[bool, Path, Path]:
     if result.returncode != 0:
         print("  [error] Fallo la instalacion de la app")
         if is_termux():
-            print_termux_pip_failure_hint()
+            print(
+                "\n  Si falla el build, asegurate de tener hatchling:\n"
+                "    pip install --no-build-isolation hatchling\n"
+                "  Luego: python scripts/install.py\n"
+            )
         return False, python, venv_dir
     print("  [ok] Terminal Radio instalado")
     if used_venv:

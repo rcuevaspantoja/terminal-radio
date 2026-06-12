@@ -60,7 +60,7 @@ python scripts/install.py
 radio
 ```
 
-The installer uses **pre-built wheels** for `pydantic-core` (from the [Termux User Repository](https://termux-user-repository.github.io/pypi/) and a fallback index) and installs with `--no-build-isolation`. PyPI has no wheel for `aarch64-linux-android` on Python 3.13; without that flag, pip rebuilds `pydantic-core` in an isolated env and tries to compile Rust even when the wheel is already installed.
+The installer uses **pre-built wheels** for `pydantic-core` (from the [Termux User Repository](https://termux-user-repository.github.io/pypi/) and a fallback index) and installs with `--no-build-isolation`. PyPI has no wheel for `aarch64-linux-android` on Python 3.13; without that flag, pip rebuilds `pydantic-core` in an isolated env and tries to compile Rust even when the wheel is already installed. On Termux the app is installed in **non-editable** mode (`pip install .`, not `-e`) because editable builds need the extra `editables` package.
 
 If install still fails, update the repo and retry:
 
