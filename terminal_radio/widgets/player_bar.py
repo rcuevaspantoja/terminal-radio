@@ -74,6 +74,12 @@ class PlayerBar(Horizontal):
             self._hide_volume_timer = None
 
     @staticmethod
+    def format_track_line(state: PlayerState) -> str:
+        if state.track_meta is not None:
+            return state.track_meta.display_line()
+        return _truncate_track(state.track_title)
+
+    @staticmethod
     def _format_lines(state: PlayerState) -> tuple[str, str]:
         vol = format_volume_meter(state.volume)
         volume_line = f"VOL {vol}"
@@ -81,7 +87,7 @@ class PlayerBar(Horizontal):
             return f"[red]{state.error}[/red]", volume_line
         if state.station_name:
             icon = ">" if state.is_playing else "||"
-            track = _truncate_track(state.track_title)
+            track = PlayerBar.format_track_line(state)
             station_line = f"{icon} [bold]{state.station_name}[/]  |  {track}"
             return station_line, volume_line
         return (

@@ -22,6 +22,9 @@ from terminal_radio.models.player import PlayerState
 from terminal_radio.services.player import PlayerService
 from terminal_radio.services.station_catalog import StationCatalogService
 from terminal_radio.screens.rename_modal import RenameModal
+from terminal_radio.screens.screensaver import ScreensaverScreen
+from terminal_radio.screens.theme_picker import ThemePickerScreen
+from terminal_radio.services.metadata import MetadataService
 from terminal_radio.widgets.player_bar import PlayerBar
 from terminal_radio.widgets.station_list import StationList
 
@@ -65,6 +68,7 @@ class MainScreen(Screen):
         ("-", "volume_down", "Vol-"),
         ("f", "toggle_favorite", "Favorite"),
         ("r", "rename_favorite", "Rename"),
+        ("l", "screensaver", "Lock"),
         ("f12", "dump_perf", "Perf"),
     ]
 
@@ -81,6 +85,10 @@ class MainScreen(Screen):
         self.player: PlayerService | None = None
         self.api = RadioBrowserClient()
         self.catalog = StationCatalogService(settings)
+        self._metadata = MetadataService()
+        self._metadata_fetch_token = 0
+        self._last_fetched_title: str | None = None
+        self._idle_timer = None
         self._mpv_error: str | None = None
         self._status_message: str | None = None
         self._search_open = False
@@ -109,6 +117,7 @@ class MainScreen(Screen):
         self._load_catalog()
         self.call_after_refresh(self._focus_active_station_list)
         self.call_after_refresh(self._sync_global_footer_hints)
+        self._reset_idle_timer()
         if perf.enabled:
             log_path = perf._log_path
             hint = str(log_path) if log_path else "perf.log"
@@ -155,6 +164,8 @@ class MainScreen(Screen):
         if action == "rename_favorite":
             station = self._target_station()
             return station is not None and self.catalog.is_favorite(station.stationuuid)
+        if action == "screensaver":
+            return not self._search_open and self._mpv_error is None
         return True
 
     @on(TabbedContent.TabActivated)
@@ -226,6 +237,9 @@ class MainScreen(Screen):
         if self._status_timer is not None:
             self._status_timer.stop()
             self._status_timer = None
+        if self._idle_timer is not None:
+            self._idle_timer.stop()
+            self._idle_timer = None
         if self.player is not None:
             self.player.shutdown()
             self.player = None
@@ -258,7 +272,68 @@ class MainScreen(Screen):
 
     def _on_player_state(self, state: PlayerState) -> None:
         perf.count("ui.player_state_event")
+        if state.track_title:
+            self._maybe_fetch_metadata(state.track_title)
+        else:
+            self._last_fetched_title = None
         self._schedule_player_ui_update(state)
+
+    def _maybe_fetch_metadata(self, track_title: str) -> None:
+        if track_title == self._last_fetched_title:
+            return
+        self._last_fetched_title = track_title
+        self._metadata_fetch_token += 1
+        self._fetch_track_metadata(track_title, self._metadata_fetch_token)
+
+    @work(exclusive=True)
+    async def _fetch_track_metadata(self, track_title: str, token: int) -> None:
+        meta = await self._metadata.fetch(track_title)
+        if token != self._metadata_fetch_token:
+            return
+        if not self.player or self.player.state.track_title != track_title:
+            return
+        self.player.set_track_meta(meta)
+        self._render_player_state(self.player.state)
+
+    def _modal_blocks_idle(self) -> bool:
+        return isinstance(
+            self.app.screen,
+            (ScreensaverScreen, ThemePickerScreen, RenameModal),
+        )
+
+    def _reset_idle_timer(self) -> None:
+        if self._idle_timer is not None:
+            self._idle_timer.stop()
+            self._idle_timer = None
+        if self.settings.screensaver_idle_seconds <= 0:
+            return
+        if self._search_open or self._modal_blocks_idle():
+            return
+        self._idle_timer = self.set_timer(
+            self.settings.screensaver_idle_seconds,
+            self._activate_screensaver_idle,
+            name="screensaver-idle",
+        )
+
+    def _activate_screensaver_idle(self) -> None:
+        self._idle_timer = None
+        if self._search_open or self._modal_blocks_idle():
+            return
+        self.action_screensaver()
+
+    def action_screensaver(self) -> None:
+        if self._mpv_error or self._search_open:
+            return
+        if isinstance(self.app.screen, ScreensaverScreen):
+            return
+        state = self.player.state if self.player else PlayerState()
+        if self._idle_timer is not None:
+            self._idle_timer.stop()
+            self._idle_timer = None
+        self.app.push_screen(ScreensaverScreen(state), self._on_screensaver_closed)
+
+    def _on_screensaver_closed(self, _result: None) -> None:
+        self._reset_idle_timer()
 
     def _schedule_player_ui_update(self, state: PlayerState) -> None:
         """Actualiza la barra; en el hilo UI refresco directo (vol/pausa)."""
@@ -276,6 +351,12 @@ class MainScreen(Screen):
         if perf.enabled and event.key in ("up", "down"):
             perf.mark("arrow_key")
             perf.count("ui.arrow_key")
+        if not isinstance(self.app.screen, ScreensaverScreen):
+            self._reset_idle_timer()
+
+    def on_mouse_down(self, event: events.MouseDown) -> None:
+        if not isinstance(self.app.screen, ScreensaverScreen):
+            self._reset_idle_timer()
 
     @on(ListView.Highlighted, "#station-list")
     def _on_station_highlighted(self, event: ListView.Highlighted) -> None:
@@ -306,6 +387,9 @@ class MainScreen(Screen):
                     state.station_uuid,
                     is_playing=state.is_playing,
                 )
+            saver = self.app.screen
+            if isinstance(saver, ScreensaverScreen):
+                saver.update_state(state)
 
     def _set_status(
         self,

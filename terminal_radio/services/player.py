@@ -10,6 +10,7 @@ from collections.abc import Callable
 from terminal_radio.audio.backend import AudioBackend, MpvNotFoundError, create_audio_backend
 from terminal_radio.config import AppSettings
 from terminal_radio.debug.perf import perf
+from terminal_radio.models.metadata import TrackMeta
 from terminal_radio.models.player import PlayerState
 from terminal_radio.models.station import Station
 
@@ -70,6 +71,7 @@ class PlayerService:
         self.state.is_playing = True
         self.state.error = None
         self.state.track_title = None
+        self.state.track_meta = None
         if station_uuid:
             self.settings.last_station_uuid = station_uuid
         self._notify(source="play")
@@ -105,10 +107,12 @@ class PlayerService:
             self._backend.stop()
             self.state.is_playing = False
             self.state.track_title = None
+            self.state.track_meta = None
             self._notify(source="stop")
 
         self.state.is_playing = False
         self.state.track_title = None
+        self.state.track_meta = None
         self._notify(source="stop")
         self._submit(work)
 
@@ -160,7 +164,14 @@ class PlayerService:
         if title == self.state.track_title:
             return
         self.state.track_title = title
+        self.state.track_meta = None
         self._notify(source="metadata")
+
+    def set_track_meta(self, meta: TrackMeta | None) -> None:
+        if meta == self.state.track_meta:
+            return
+        self.state.track_meta = meta
+        self._notify(source="metadata_enriched")
 
     def _notify(self, *, source: str = "other") -> None:
         perf.count(f"player.notify.{source}")

@@ -83,9 +83,9 @@ No es un port de Reverbic (Rust). Es una **reimplementación inspirada** en su e
 
 ### RF-04 — Screensaver
 
-- RF-04.1: Activación manual con `s`; salida con cualquier tecla.
+- RF-04.1: Activación manual con `l`; salida con cualquier tecla.
 - RF-04.2: Activación automática tras `screensaver_idle_seconds` sin input.
-- RF-04.3: Reloj en caracteres de bloque + estación + track actual.
+- RF-04.3: Estación + pista actual centradas en pantalla.
 
 ### RF-05 — Integraciones de plataforma
 
@@ -414,6 +414,6 @@ Python: **3.11+**
 
 ## 14. Próximo paso
 
-**Fase 3** — favoritos (`f`), renombrar (`r`), historial con dedup y persistencia JSON.
+**Fase 4** — lock screen (`l` / idle) + metadata enriquecida (artista en barra).
 
-**Fase 4** — screensaver + metadata enriquecida en la barra de reproducción.
+**Fase 5** — media keys y system tray (Linux/Windows).
