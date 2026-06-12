@@ -196,7 +196,7 @@ Data directory:
 
 | File | Contents |
 |------|----------|
-| `config.json` | Volume, idle timeout, history size, … |
+| `config.json` | Volume, theme, idle timeout, history size, … |
 | `favorites.json` | Favorites and custom names |
 | `history.json` | Play history |
 
@@ -207,6 +207,7 @@ TERMINAL_RADIO_VOLUME=60
 TERMINAL_RADIO_HISTORY_MAX=100
 TERMINAL_RADIO_SCREENSAVER_IDLE_SECONDS=30
 TERMINAL_RADIO_AUTOPLAY_LAST=true
+TERMINAL_RADIO_THEME=nord
 ```
 
 ### Windows: mpv tips

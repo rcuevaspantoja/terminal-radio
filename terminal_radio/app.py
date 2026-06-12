@@ -72,11 +72,20 @@ class TerminalRadioApp(App):
         if not self._theme_picker_open:
             return
         self._theme_picker_open = False
-        if not event.option_selected and self._theme_before_picker is not None:
+        if event.option_selected:
+            self.settings.theme = self.theme
+            save_settings(self.settings)
+        elif self._theme_before_picker is not None:
             self.theme = self._theme_before_picker
         self._theme_before_picker = None
 
+    def _apply_saved_theme(self) -> None:
+        name = self.settings.theme
+        if name in self.available_themes:
+            self.theme = name
+
     def on_mount(self) -> None:
+        self._apply_saved_theme()
         self.main_screen = MainScreen(self.settings)
         self.push_screen(self.main_screen)
         self._hide_app_quit_footer_hint()

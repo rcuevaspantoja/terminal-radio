@@ -21,7 +21,7 @@ def test_save_and_load_roundtrip(tmp_path, monkeypatch) -> None:
         lambda: config_dir,
     )
 
-    original = AppSettings(volume=72, autoplay_last=True)
+    original = AppSettings(volume=72, autoplay_last=True, theme="nord")
     save_settings(original)
 
     config_file = config_dir / "config.json"
@@ -29,10 +29,12 @@ def test_save_and_load_roundtrip(tmp_path, monkeypatch) -> None:
     on_disk = json.loads(config_file.read_text(encoding="utf-8"))
     assert on_disk["volume"] == 72
     assert on_disk["autoplay_last"] is True
+    assert on_disk["theme"] == "nord"
 
     loaded = load_settings()
     assert loaded.volume == 72
     assert loaded.autoplay_last is True
+    assert loaded.theme == "nord"
 
 
 def test_env_override(monkeypatch) -> None:

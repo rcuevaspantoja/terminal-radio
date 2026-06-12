@@ -385,10 +385,12 @@ Python: **3.11+**
 | **2** | Búsqueda + MainScreen + PlayerBar | Flujo buscar→reproducir end-to-end |
 | **3** | Favoritos + historial + rename | Persistencia entre sesiones |
 | **4** | Lock screen + metadata | Idle timer + artista en barra |
-| **5** | Distribución Termux (TUR `.deb`) | Ver §12.1 |
-| **6** | Pulido + `--check` + distribución desktop | README copy-paste; pipx/uv tool; PyPI opcional |
+| **5** | Distribución Termux (TUR `.deb`) | *Pausada* — ver §12.1 |
+| **6** | Distribución desktop | Ver §12.2 |
 
-### 12.1 Fase 5 — Distribución Termux: paquete `.deb` en TUR (detalle)
+### 12.1 Fase 5 — Distribución Termux (pausada)
+
+**Estado:** pausada; recipe en `tur/terminal-radio/`. Retomar cuando desktop (Fase 6) esté cerrada.
 
 **Objetivo de producto:** instalación en Android tan simple y fiable como en desktop — `pkg install terminal-radio` — sin que el usuario compile nada ni conozca pip, índices TUR/Eutalix ni `PYTHONPATH`. Mismo código que desktop; cambia solo el **canal de distribución**.
 
@@ -445,6 +447,28 @@ radio
 - Guía de contribución: documentación del repo TUR (`CONTRIBUTING`, ejemplos de `packages/*/build.sh`)
 - PyPI comunitario (deps Python): [termux-user-repository.github.io/pypi](https://termux-user-repository.github.io/pypi/)
 
+### 12.2 Fase 6 — Distribución desktop (detalle)
+
+**Objetivo:** el usuario final **no** clona el repo ni ejecuta `install.py` (pip, venv, Scoop, etc.). La app se empaqueta en **CI**; en local solo descarga y ejecuta.
+
+| Plataforma | Formato | Experiencia usuario |
+|------------|---------|---------------------|
+| **Windows** | Instalador (Inno Setup / MSI) + zip portable | Descargar → instalar o descomprimir → `Radio` desde menú o acceso directo |
+| **Linux** | Release `.tar.gz` o AppImage (x86_64) | Descargar → `./radio` (mpv documentado o incluido) |
+
+**Build:** GitHub Actions en cada tag — PyInstaller (o venv embebido) + **mpv portable** en Windows.
+
+**Audiencias:**
+
+| Quién | Camino |
+|-------|--------|
+| Usuario final | Release precompilado |
+| Desarrollador | `pip install -e ".[dev]"` (sin script largo) |
+
+**Dependencia externa:** `mpv` — en Windows se incluye en el instalador; en Linux, empaquetado o un paso mínimo (`apt install mpv`).
+
+**Opcional post–v1.0:** PyPI + `pipx`, `winget`, `.deb` / Flatpak.
+
 ---
 
 ## 13. Decisiones cerradas
@@ -463,6 +487,8 @@ radio
 
 ## 14. Próximo paso
 
-**Fase 5 (en curso)** — `scripts/install-termux.sh`, recipe `tur/terminal-radio/build.sh`, PR a TUR, README Termux.
+**Fase 6 (prioridad)** — releases desktop: Windows (instalador Inno Setup) + Linux (tarball/AppImage); CI en GitHub Actions.
 
-**Fase 6** — pulido final, `terminal-radio --check`, distribución desktop (pipx/uv/PyPI).
+**Fase 5 (Termux)** — pausada; recipe TUR listo en `tur/` cuando se retome.
+
+**Instalador dev** — `scripts/install.py` queda para desarrollo; no es la vía del usuario final.
