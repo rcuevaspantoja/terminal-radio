@@ -158,8 +158,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if is_termux():
         print(
-            "[aviso] En Termux usa: ./scripts/install-termux.sh\n"
-            "  (evita pip install del proyecto; ver tur/README.md)"
+            "[aviso] En Termux usa: python scripts/install-termux.py\n"
+            "  (no ejecutes install-termux.sh con python; ver tur/README.md)"
         )
 
     if not python_version_ok():

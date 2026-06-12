@@ -6,8 +6,8 @@ Instala dependencias de runtime con pip (wheels precompilados) y registra
 `radio` / `terminal-radio` apuntando al checkout con PYTHONPATH.
 No ejecuta `pip install .` del proyecto (evita hatchling/editables en Android).
 
-    python scripts/install_termux.py
-    ./scripts/install-termux.sh
+    python scripts/install-termux.py
+    sh scripts/install-termux.sh
 """
 
 from __future__ import annotations
@@ -78,7 +78,7 @@ def main(argv: list[str] | None = None) -> int:
     print("\n" + "=" * 40)
     print("Listo. Ejecuta:")
     print("  radio")
-    print("\nActualizar tras git pull: python scripts/install_termux.py")
+    print("\nActualizar tras git pull: python scripts/install-termux.py")
     print("\nCuando exista el paquete TUR: pkg install terminal-radio")
 
     import os

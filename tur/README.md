@@ -20,7 +20,7 @@ radio
 Users install from a git checkout:
 
 ```bash
-./scripts/install-termux.sh
+python scripts/install-termux.py
 ```
 
 That script installs Python dependencies and registers `radio` with `PYTHONPATH` pointing at the repo (no `pip install .`).

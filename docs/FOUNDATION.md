@@ -17,7 +17,7 @@ No es un port de Reverbic (Rust). Es una **reimplementación inspirada** en su e
 |---|-----------|-------------|
 | P1 | **Un propósito** | Solo radio por internet. Sin reproductores locales ni servicios de streaming propietarios. |
 | P2 | **Misma experiencia en todas las plataformas** | Linux, Windows y Termux comparten código y flujo TUI; se recorta funcionalidad por plataforma solo cuando el SO no la soporta (p. ej. sin `python-mpv` en Termux), nunca features “extra” de escritorio ausentes en móvil. |
-| P3 | **Instalación en 2–3 comandos** | Desktop: `python scripts/install.py`. Termux: `pkg install terminal-radio` (TUR) o `./scripts/install-termux.sh` como puente. |
+| P3 | **Instalación en 2–3 comandos** | Desktop: `python scripts/install.py`. Termux: `pkg install terminal-radio` (TUR) o `python scripts/install-termux.py` como puente. |
 | P4 | **TUI única** | Toda interacción ocurre en la terminal. Sin bandeja del sistema ni teclas multimedia globales. |
 | P5 | **Dependencias opcionales nunca rompen** | `python-mpv` → try/except + fallback a subprocess; documentado en `--check`. |
 | P6 | **Estado único** | Un solo `PlayerService` es la fuente de verdad; la UI solo observa y envía comandos. |
@@ -127,7 +127,7 @@ No es un port de Reverbic (Rust). Es una **reimplementación inspirada** en su e
 ### UC-3 — Radio en Termux (smartphone)
 
 **Actor:** Usuario móvil  
-**Flujo:** `pkg install terminal-radio` *(TUR)* o `./scripts/install-termux.sh` → `radio`  
+**Flujo:** `pkg install terminal-radio` *(TUR)* o `python scripts/install-termux.py` → `radio`  
 **Postcondición:** Misma TUI y atajos que en desktop; audio vía subprocess mpv  
 
 ### UC-4 — Sesión idle con screensaver

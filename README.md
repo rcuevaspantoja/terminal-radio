@@ -66,13 +66,15 @@ pkg update && pkg upgrade
 pkg install python python-pip mpv git
 git clone <repo-url> terminal-radio
 cd terminal-radio
-./scripts/install-termux.sh
+python scripts/install-termux.py
 radio
 ```
 
-The Termux script installs runtime dependencies from [TUR PyPI](https://termux-user-repository.github.io/pypi/) / [Eutalix](https://eutalix.github.io/android-pydantic-core/) and registers `radio` with `PYTHONPATH` pointing at the repo. Same TUI and shortcuts as desktop.
+(`sh scripts/install-termux.sh` also works — do **not** run the `.sh` file with `python`.)
 
-After `git pull`, re-run `./scripts/install-termux.sh` if dependencies change.
+The Termux installer pulls runtime dependencies from [TUR PyPI](https://termux-user-repository.github.io/pypi/) / [Eutalix](https://eutalix.github.io/android-pydantic-core/) and registers `radio` with `PYTHONPATH` pointing at the repo. Same TUI and shortcuts as desktop.
+
+After `git pull`, re-run `python scripts/install-termux.py` if dependencies change.
 
 Do **not** run `pip install --upgrade pip` on Termux — it breaks the `python-pip` package.
 
@@ -89,7 +91,7 @@ All platforms use the same Python installer. The `.ps1` / `.sh` scripts are shor
 | Any | `python scripts/install.py` |
 | Windows | `.\scripts\install.ps1` |
 | Linux / macOS | `./scripts/install.sh` |
-| Termux | `./scripts/install-termux.sh` |
+| Termux | `python scripts/install-termux.py` |
 
 ### What the installer does
 
