@@ -51,33 +51,32 @@ On Ubuntu 23.04+ and similar distros, the installer creates a **venv** automatic
 
 ### Termux (Android)
 
+**Recommended (when published to TUR):**
+
 ```bash
-pkg update && pkg upgrade
-pkg install python mpv git
-git clone <repo-url> terminal-radio
-cd terminal-radio
-python scripts/install.py
+pkg install tur-repo    # once, if needed
+pkg install terminal-radio
 radio
 ```
 
-The installer uses **pre-built wheels** for `pydantic-core` (from the [Termux User Repository](https://termux-user-repository.github.io/pypi/) and a fallback index) and installs with `--no-build-isolation`. PyPI has no wheel for `aarch64-linux-android` on Python 3.13; without that flag, pip rebuilds `pydantic-core` in an isolated env and tries to compile Rust even when the wheel is already installed. On Termux the app is installed in **non-editable** mode (`pip install .`, not `-e`) because editable builds need the extra `editables` package.
-
-If install still fails, update the repo and retry:
+**Until the `.deb` is on TUR** — install from a git checkout (no `pip install .`; avoids build failures on Android):
 
 ```bash
-git pull
-python scripts/install.py
+pkg update && pkg upgrade
+pkg install python python-pip mpv git
+git clone <repo-url> terminal-radio
+cd terminal-radio
+./scripts/install-termux.sh
+radio
 ```
 
-Or install the wheel manually, then run the installer again:
+The Termux script installs runtime dependencies from [TUR PyPI](https://termux-user-repository.github.io/pypi/) / [Eutalix](https://eutalix.github.io/android-pydantic-core/) and registers `radio` with `PYTHONPATH` pointing at the repo. Same TUI and shortcuts as desktop.
 
-```bash
-pip install --no-build-isolation pydantic-core \
-  --extra-index-url https://eutalix.github.io/android-pydantic-core/
-python scripts/install.py
-```
+After `git pull`, re-run `./scripts/install-termux.sh` if dependencies change.
 
 Do **not** run `pip install --upgrade pip` on Termux — it breaks the `python-pip` package.
+
+Packaging recipe for maintainers: [tur/README.md](tur/README.md).
 
 ---
 
@@ -89,7 +88,8 @@ All platforms use the same Python installer. The `.ps1` / `.sh` scripts are shor
 |----------|---------|
 | Any | `python scripts/install.py` |
 | Windows | `.\scripts\install.ps1` |
-| Linux / macOS / Termux | `./scripts/install.sh` |
+| Linux / macOS | `./scripts/install.sh` |
+| Termux | `./scripts/install-termux.sh` |
 
 ### What the installer does
 
@@ -252,8 +252,8 @@ Architecture and roadmap: [docs/FOUNDATION.md](docs/FOUNDATION.md).
 | Search + UI | Done |
 | Favorites + history | Done |
 | Lock + track metadata | Done |
-| Media keys + system tray | Planned |
-| Polish + distribution | Planned |
+| Termux distribution (TUR `.deb`) | In progress |
+| Polish + desktop distribution | Planned |
 
 ## License
 

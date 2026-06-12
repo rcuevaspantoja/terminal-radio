@@ -183,6 +183,29 @@ def _write_shim(target: Path, python: Path) -> None:
         target.chmod(0o755)
 
 
+def install_termux_cli_shims(python: Path, repo_root: Path) -> list[Path]:
+    """
+    Shims for Termux: run from a source checkout via PYTHONPATH (no pip install).
+
+    Avoids hatchling/editables builds that fail on Android.
+    """
+    bin_dir = get_local_bin_dir()
+    root = str(repo_root.resolve())
+    py = str(python.resolve())
+    body = (
+        f'export PYTHONPATH="{root}:${{PYTHONPATH:-}}"\n'
+        f'exec "{py}" -m terminal_radio "$@"\n'
+    )
+    created: list[Path] = []
+    for name in CLI_NAMES:
+        target = bin_dir / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(f"#!/bin/sh\n{body}", encoding="utf-8")
+        target.chmod(0o755)
+        created.append(target)
+    return created
+
+
 def install_cli_shims(python: Path, venv_dir: Path | None = None) -> tuple[list[Path], bool]:
     """
     Crea comandos `radio` y `terminal-radio` en ~/.local/bin.

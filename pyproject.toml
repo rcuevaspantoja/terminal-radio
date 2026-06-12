@@ -14,14 +14,10 @@ dependencies = [
 
 [project.optional-dependencies]
 audio = ["python-mpv>=1.0.7"]
-platform = ["pynput>=1.7.7", "pystray>=0.19.5", "Pillow>=10.0.0"]
 fuzzy = ["rapidfuzz>=3.9.0"]
 dev = ["pytest>=8.0.0"]
 all = [
     "python-mpv>=1.0.7",
-    "pynput>=1.7.7",
-    "pystray>=0.19.5",
-    "Pillow>=10.0.0",
     "rapidfuzz>=3.9.0",
 ]
 

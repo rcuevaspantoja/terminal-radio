@@ -27,8 +27,6 @@ class AppSettings(BaseSettings):
     history_max: int = Field(default=50, ge=1, le=500)
     screensaver_idle_seconds: int = Field(default=120, ge=0)
     autoplay_last: bool = False
-    media_keys_enabled: bool = True
-    show_system_tray: bool = True
     last_station_uuid: str | None = None
 
 

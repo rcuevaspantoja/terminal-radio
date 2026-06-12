@@ -151,8 +151,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
+    from terminal_radio.platform.deps import is_termux
+
     print("Terminal Radio — instalador")
     print("=" * 40)
+
+    if is_termux():
+        print(
+            "[aviso] En Termux usa: ./scripts/install-termux.sh\n"
+            "  (evita pip install del proyecto; ver tur/README.md)"
+        )
 
     if not python_version_ok():
         print(f"[error] Python {sys.version_info.major}.{sys.version_info.minor} detectado.")
