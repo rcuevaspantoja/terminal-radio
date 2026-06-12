@@ -1,154 +1,230 @@
 # Terminal Radio
 
-Reproductor de radio por internet en terminal para **Linux**, **Windows**, **macOS** y **Termux (Android)**.
+Internet radio player for your terminal. Works on **Linux**, **Windows**, **macOS**, and **Termux (Android)**.
 
-Inspirado en [Reverbic](https://github.com/sewandev/Reverbic), enfocado solo en radio: búsqueda, favoritos, historial y reproducción vía `mpv`.
+Search stations, save favorites, keep a play history, and listen through [mpv](https://mpv.io/). Inspired by [Reverbic](https://github.com/sewandev/Reverbic), focused on radio only.
 
-## Instalación (todas las plataformas)
+---
 
-Mismo flujo en cualquier SO: clonar el repo y ejecutar el instalador. Detecta la plataforma y usa el gestor de paquetes nativo para `mpv`.
-
-### Requisitos previos
-
-- **Python 3.11+** — [python.org](https://www.python.org/downloads/)
-- **pip** — en Ubuntu/WSL: `sudo apt install python3-pip` (el instalador lo hace solo si falta)
-- En Ubuntu 23.04+ el instalador crea un **venv** automáticamente (PEP 668)
-- **WSL** con repo en `/mnt/c/...`: el venv va a `~/.local/share/terminal-radio/venv` (no se puede crear en el disco Windows)
-
-### Un comando
+## Quick start
 
 ```bash
 git clone <repo-url> terminal-radio
 cd terminal-radio
 python scripts/install.py
+radio
 ```
 
-En **Windows (PowerShell)** — recomendado (añade `radio` al PATH de usuario y de la sesión actual):
+On **Windows (PowerShell)**, use the wrapper script (updates PATH for the current session):
 
 ```powershell
 git clone <repo-url> terminal-radio
 cd terminal-radio
 .\scripts\install.ps1
+radio
 ```
 
-Equivalente con Python directo:
+---
 
-```powershell
-python scripts/install.py
-```
+## Features
 
-Tras instalar en Windows: escribe `radio` en esa misma ventana. En **terminales nuevas**, `radio` también funciona (el instalador registra `%USERPROFILE%\.local\bin` en el PATH del usuario).
+- **Search** — popular stations on startup; search by name with `/`
+- **Favorites** — save stations and rename them (`f`, `r`)
+- **History** — recently played (deduplicated)
+- **Player bar** — station name + track/artist (ICY metadata + Deezer/iTunes lookup)
+- **Lock** — full-screen view with station and song (`l`, or auto after idle)
+- **Themes** — switch color themes with live preview (`t`)
 
-En Linux/macOS/Termux también puedes usar:
+---
+
+## Requirements
+
+| Requirement | Notes |
+|-------------|--------|
+| **Python 3.11+** | [python.org](https://www.python.org/downloads/) |
+| **pip** | Usually bundled with Python |
+| **mpv** | Audio engine (installed by the script if missing) |
+
+On Ubuntu 23.04+ and similar distros, the installer creates a **venv** automatically (PEP 668).
+
+**WSL** with the repo under `/mnt/c/...`: the venv lives at `~/.local/share/terminal-radio/venv` (cannot sit on the Windows mount).
+
+---
+
+## Installation
+
+All platforms use the same Python installer. The `.ps1` / `.sh` scripts are shortcuts.
+
+| Platform | Command |
+|----------|---------|
+| Any | `python scripts/install.py` |
+| Windows | `.\scripts\install.ps1` |
+| Linux / macOS / Termux | `./scripts/install.sh` |
+
+### What the installer does
+
+1. Checks Python 3.11+
+2. Installs **mpv** if needed (via your system package manager)
+3. Installs Terminal Radio with `pip install -e .`
+4. Registers **`radio`** and **`terminal-radio`** in your user bin folder
+
+| OS | Commands installed to |
+|----|------------------------|
+| Linux / macOS / WSL | `~/.local/bin` |
+| Windows | `%USERPROFILE%\.local\bin` |
+
+After install, run `radio` from any directory. On Windows, **new terminals** pick up PATH automatically; `install.ps1` also updates the current session.
+
+### mpv by platform
+
+| Platform | Package manager (first match wins) |
+|----------|-----------------------------------|
+| Windows | Scoop → Chocolatey → winget portable |
+| Debian / Ubuntu / WSL | `apt` → `snap` fallback |
+| Fedora / RHEL | `dnf` |
+| Arch | `pacman` |
+| openSUSE | `zypper` |
+| Alpine | `apk` |
+| Termux | `pkg` |
+| macOS | Homebrew |
+
+The installer does **not** install Scoop, Homebrew, etc. — it only uses what you already have.
+
+### Installer options
 
 ```bash
-./scripts/install.sh
+python scripts/install.py --check-only   # report only, no install
+python scripts/install.py --skip-mpv     # app only
+python scripts/install.py --skip-app       # mpv only
+python scripts/install.py --no-editable    # non-editable pip install
 ```
 
-### Qué hace el instalador
-
-1. Comprueba Python 3.11+
-2. Si falta **mpv**, lo instala con el gestor detectado:
-
-| Plataforma | Gestor (en orden de preferencia) |
-|------------|----------------------------------|
-| Windows | **Scoop** (extras/mpv) → Chocolatey → winget portable *(solo sin Scoop)* |
-| Debian/Ubuntu / WSL | `sudo apt update && sudo apt install mpv` — si no existe el paquete: `sudo snap install mpv` |
-| Fedora/RHEL | `sudo dnf install mpv` |
-| Arch | `sudo pacman -S mpv` |
-| openSUSE | `sudo zypper install mpv` |
-| Alpine | `sudo apk add mpv` |
-| Termux | `pkg install mpv` |
-| macOS | `brew install mpv` |
-
-3. Instala Terminal Radio con `pip install -e .`
-
-No instala Scoop, Homebrew ni otros gestores automáticamente — solo usa los que ya tienes en el sistema.
-
-### Verificar sin instalar
+### Verify
 
 ```bash
 python scripts/install.py --check-only
-terminal-radio --check
+radio --check
+radio --version
 ```
 
-### Opciones del instalador
+---
 
-```bash
-python scripts/install.py --check-only   # solo informe
-python scripts/install.py --skip-mpv     # solo la app Python
-python scripts/install.py --skip-app     # solo mpv
-```
-
-## Uso
-
-Tras `python scripts/install.py`, usa **un solo comando** (sin `source`, sin rutas):
+## Usage
 
 ```bash
 radio
 ```
 
-También funciona `terminal-radio`. El instalador registra ambos en `~/.local/bin` (Linux/macOS/WSL) o `%USERPROFILE%\.local\bin` (Windows).
+### Tabs
 
-```bash
-radio --version
-radio --check
-```
+| Tab | Description |
+|-----|-------------|
+| **Search** | Popular stations on launch; `/` to search |
+| **Favorites** | Saved stations (`f` to toggle) |
+| **History** | Recent plays |
 
-| Plataforma | Si `radio` no se encuentra |
-|------------|----------------------------|
-| Linux | Añade `~/.local/bin` al PATH (el instalador te lo indica) |
-| Windows | Usa `.\scripts\install.ps1` o reabre la terminal tras `install.py` |
+Use arrow keys to select, then **Enter** or **p** to play. Double-click also works.
 
-Atajos actuales (Fase 1):
+### Keyboard shortcuts
 
-| Tecla | Acción |
-|-------|--------|
-| `p` | Reproducir stream de prueba (SomaFM Groove Salad) |
-| `Space` | Pausar / reanudar |
-| `s` | Detener |
-| `+` / `-` | Subir / bajar volumen |
-| `q` | Salir |
+| Key | Action |
+|-----|--------|
+| `/` | Search |
+| `Enter` / `p` | Play selected station |
+| `Space` | Pause / resume |
+| `+` / `-` | Volume up / down (meter shows briefly) |
+| `f` | Add / remove favorite |
+| `r` | Rename favorite (Favorites tab) |
+| `l` | Lock — full-screen station + song |
+| `t` | Theme picker (live preview) |
+| `q` | Quit |
+| `Esc` | Cancel search |
 
-## Configuración
+On **Favorites** and **History**, the footer hides Search/Quit hints to reduce clutter; the keys still work.
 
-Archivos en:
+### Lock screen
 
-- Linux / Termux / macOS: `~/.config/terminal-radio/`
-- Windows: `%APPDATA%\terminal-radio\`
+- Press **`l`** anytime, or wait for idle timeout (default **120 s**)
+- Shows station name and current track
+- **Any key** returns to the app
+- Audio **keeps playing**
 
-Variables de entorno (prefijo `TERMINAL_RADIO_`):
+To disable auto-lock: set `"screensaver_idle_seconds": 0` in `config.json`.
+
+---
+
+## Configuration
+
+Data directory:
+
+| OS | Path |
+|----|------|
+| Linux / macOS / Termux | `~/.config/terminal-radio/` |
+| Windows | `%APPDATA%\terminal-radio\` |
+
+| File | Contents |
+|------|----------|
+| `config.json` | Volume, idle timeout, history size, … |
+| `favorites.json` | Favorites and custom names |
+| `history.json` | Play history |
+
+Environment overrides (prefix `TERMINAL_RADIO_`):
 
 ```bash
 TERMINAL_RADIO_VOLUME=60
+TERMINAL_RADIO_HISTORY_MAX=100
+TERMINAL_RADIO_SCREENSAVER_IDLE_SECONDS=30
 TERMINAL_RADIO_AUTOPLAY_LAST=true
 ```
 
-## Desarrollo
+### Windows: mpv tips
+
+Avoid `winget install shinchiro.mpv` — it installs a **GUI app** that does not put `mpv.exe` on PATH.
+
+Recommended:
+
+```powershell
+scoop bucket add extras
+scoop install mpv
+```
+
+If mpv is installed but not detected:
+
+```powershell
+$env:TERMINAL_RADIO_MPV = "C:\Users\you\scoop\apps\mpv\current\mpv.exe"
+```
+
+### Diagnostics
+
+```bash
+radio --perf          # performance log in the config directory
+# F12 in-app saves a report when --perf is active
+```
+
+---
+
+## Development
 
 ```bash
 pip install -e ".[dev]"
 python -m pytest
 ```
 
-Documento de arquitectura: [docs/FOUNDATION.md](docs/FOUNDATION.md).
+Architecture and roadmap: [docs/FOUNDATION.md](docs/FOUNDATION.md).
 
-## ¿Qué es mpv?
+---
 
-[mpv](https://mpv.io/) es el reproductor de audio que usa Terminal Radio por debajo. La app no decodifica streams ella misma; controla `mpv` como motor. Es una dependencia de sistema (como `git`), no una librería Python.
+## Project status
 
-**Windows:** evita `winget install shinchiro.mpv` — instala una app GUI ("MPV Player") que no deja `mpv.exe` en PATH. El instalador usa Scoop (`scoop install mpv`) cuando está disponible.
+| Phase | Status |
+|-------|--------|
+| Audio (mpv) | Done |
+| Search + UI | Done |
+| Favorites + history | Done |
+| Lock + track metadata | Done |
+| Media keys + system tray | Planned |
+| Polish + distribution | Planned |
 
-Si mpv está instalado pero no en PATH, define la ruta manualmente:
-
-```powershell
-set TERMINAL_RADIO_MPV=C:\Users\tu\scoop\apps\mpv\current\mpv.exe
-```
-
-## Estado
-
-**Fase 1** — audio funcional vía mpv (subprocess + binding opcional).
-
-## Licencia
+## License
 
 MIT
