@@ -86,6 +86,9 @@ class TerminalRadioApp(App):
 
     def on_mount(self) -> None:
         self._apply_saved_theme()
+        from terminal_radio.platform.console_shutdown import install_shutdown_hook
+
+        install_shutdown_hook(self.cleanup_resources)
         self.main_screen = MainScreen(self.settings)
         self.push_screen(self.main_screen)
         self._hide_app_quit_footer_hint()

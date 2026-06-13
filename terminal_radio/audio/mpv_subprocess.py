@@ -70,6 +70,7 @@ class MpvSubprocessBackend(AudioBackend):
         self._ipc_endpoint = get_ipc_endpoint()
         self._mpv_binary = find_mpv_binary()
         self._shut_down = False
+        self._lock = threading.RLock()
         self._mpv_pid: int | None = None
         if self._mpv_binary is None:
             raise RuntimeError("mpv binary missing")
@@ -131,10 +132,14 @@ class MpvSubprocessBackend(AudioBackend):
         self._metadata_callbacks.append(callback)
 
     def shutdown(self) -> None:
-        if self._shut_down:
-            return
-        self._shut_down = True
+        with self._lock:
+            if self._shut_down:
+                return
+            self._shut_down = True
+            self._release_process()
 
+    def _release_process(self) -> None:
+        """Detiene mpv e IPC (caller debe tener _lock si aplica)."""
         process = self._process
         pid = self._mpv_pid
         self._process = None
@@ -151,46 +156,51 @@ class MpvSubprocessBackend(AudioBackend):
         self._cleanup_ipc_endpoint()
 
     def _spawn(self, url: str) -> None:
-        self.shutdown()
-        self._shut_down = False
-        self._cleanup_ipc_endpoint()
+        with self._lock:
+            if self._shut_down:
+                return
+            self._release_process()
 
-        args = [
-            self._mpv_binary,
-            *get_mpv_stream_cli_args(),
-            "--really-quiet",
-            f"--input-ipc-server={self._ipc_endpoint}",
-            f"--volume={self._volume}",
-            url,
-        ]
-        stderr_target = subprocess.DEVNULL
-        if perf.enabled:
-            stderr_target = perf.mpv_stderr_target()
-        popen_kwargs: dict = {
-            "stdout": subprocess.DEVNULL,
-            "stderr": stderr_target,
-        }
-        if _WIN_CREATION_FLAGS:
-            popen_kwargs["creationflags"] = _WIN_CREATION_FLAGS
-        self._process = subprocess.Popen(args, **popen_kwargs)
-        self._mpv_pid = self._process.pid
-        self._write_pid_file(self._mpv_pid)
-        self._current_url = url
-        self._playing = True
-        self._paused = False
+            args = [
+                self._mpv_binary,
+                *get_mpv_stream_cli_args(),
+                "--really-quiet",
+                f"--input-ipc-server={self._ipc_endpoint}",
+                f"--volume={self._volume}",
+                url,
+            ]
+            stderr_target = subprocess.DEVNULL
+            if perf.enabled:
+                stderr_target = perf.mpv_stderr_target()
+            popen_kwargs: dict = {
+                "stdout": subprocess.DEVNULL,
+                "stderr": stderr_target,
+            }
+            if _WIN_CREATION_FLAGS:
+                popen_kwargs["creationflags"] = _WIN_CREATION_FLAGS
+            self._process = subprocess.Popen(args, **popen_kwargs)
+            self._mpv_pid = self._process.pid
+            self._write_pid_file(self._mpv_pid)
+            self._current_url = url
+            self._playing = True
+            self._paused = False
 
         if sys.platform == "win32":
-            # El stream ya va en argv; no bloquear el hilo de audio esperando IPC.
             self._start_metadata_poller()
             return
 
         if not self._wait_for_ipc():
+            with self._lock:
+                self._release_process()
             self._playing = False
             raise RuntimeError("No se pudo conectar al IPC de mpv")
 
-        assert self._ipc is not None
-        self._ipc.on_property_change(self._on_mpv_property_change)
-        self._ipc.observe_property("media-title", _MEDIA_TITLE_OBSERVE_ID)
+        with self._lock:
+            if self._shut_down or self._process is None:
+                return
+            assert self._ipc is not None
+            self._ipc.on_property_change(self._on_mpv_property_change)
+            self._ipc.observe_property("media-title", _MEDIA_TITLE_OBSERVE_ID)
 
     def _wait_for_ipc(self) -> bool:
         if sys.platform == "win32":

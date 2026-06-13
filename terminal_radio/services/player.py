@@ -132,18 +132,34 @@ class PlayerService:
         self._submit(work)
 
     def shutdown(self) -> None:
-        """Cierra mpv de forma síncrona (no depender de la cola del worker)."""
+        """Cierra mpv; preferir desde el hilo de audio (ver PlayerService)."""
         if self._closing:
             return
         self._closing = True
-        try:
-            self._backend.shutdown()
-        except Exception:
-            logger.exception("Error al cerrar backend de audio")
+
+        done = threading.Event()
+
+        def work() -> None:
+            try:
+                self._backend.shutdown()
+            except Exception:
+                logger.exception("Error al cerrar backend de audio")
+            finally:
+                done.set()
+
+        self._work_queue.put(work)
+        if not done.wait(timeout=5.0):
+            logger.warning("Timeout cerrando mpv; forzando kill")
+            try:
+                self._backend.shutdown()
+            except Exception:
+                logger.exception("Error al forzar cierre de mpv")
+
         try:
             self._work_queue.put_nowait(None)
         except queue.Full:
             pass
+        self._worker.join(timeout=2.0)
 
     def _submit(self, work: Callable[[], None]) -> None:
         if self._closing:
