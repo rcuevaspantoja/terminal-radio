@@ -37,7 +37,12 @@ class MpvNotFoundError(RuntimeError):
         if is_termux():
             hint = "pkg install mpv"
         elif sys.platform == "win32":
-            hint = "scoop bucket add extras && scoop install mpv"
+            from terminal_radio.platform.bundle import is_frozen
+
+            if is_frozen():
+                hint = "reinstall Terminal Radio (missing mpv\\mpv.exe) or set TERMINAL_RADIO_MPV"
+            else:
+                hint = "scoop install mpv, or bundle mpv\\mpv.exe next to radio.exe"
         else:
             hint = "sudo apt install mpv  (or your distro equivalent)"
         super().__init__(f"mpv not found in PATH. Install with: {hint}")

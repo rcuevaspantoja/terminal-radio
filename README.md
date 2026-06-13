@@ -6,7 +6,17 @@ Search stations, save favorites, keep a play history, and listen through [mpv](h
 
 ---
 
-## Quick start
+## Windows (download)
+
+No Python or pip required. Get **`TerminalRadio-win64.zip`** from [GitHub Releases](https://github.com/rcuev/terminal-radio/releases), unzip, and run **`radio.exe`**. Includes mpv.
+
+Optional: **`TerminalRadio-setup.exe`** installer (same app, adds Start Menu shortcut).
+
+Developers: see [packaging/README.md](packaging/README.md).
+
+---
+
+## Quick start (developers)
 
 ```bash
 git clone <repo-url> terminal-radio
@@ -255,8 +265,9 @@ Architecture and roadmap: [docs/FOUNDATION.md](docs/FOUNDATION.md).
 | Search + UI | Done |
 | Favorites + history | Done |
 | Lock + track metadata | Done |
-| Termux distribution (TUR `.deb`) | In progress |
-| Polish + desktop distribution | Planned |
+| Termux distribution (TUR `.deb`) | Paused |
+| Windows release (zip / installer) | In progress |
+| Linux release (tarball) | Planned |
 
 ## License
 

@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
+from terminal_radio.platform.bundle import bundled_mpv_windows
 from terminal_radio.platform.detect import is_termux
 
 ENV_MPV_OVERRIDE = "TERMINAL_RADIO_MPV"
@@ -163,6 +164,10 @@ def find_mpv_binary() -> str | None:
         return None
 
     if sys.platform == "win32":
+        bundled = bundled_mpv_windows()
+        if bundled is not None and _verify_mpv_cli(bundled):
+            return str(bundled.resolve())
+
         for candidate in _windows_mpv_search_paths():
             if _is_rejected_windows_mpv(candidate):
                 continue
