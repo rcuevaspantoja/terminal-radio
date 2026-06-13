@@ -4,7 +4,7 @@
 #define MyAppName "Terminal Radio"
 #define MyAppVersion "0.1.0"
 #define MyAppPublisher "Terminal Radio"
-#define MyAppURL "https://github.com/rcuev/terminal-radio"
+#define MyAppURL "https://github.com/rcuevaspantoja/terminal-radio"
 #define MyAppExeName "radio.exe"
 
 [Setup]

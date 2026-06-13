@@ -8,7 +8,7 @@ Search stations, save favorites, keep a play history, and listen through [mpv](h
 
 ## Windows (download)
 
-No Python or pip required. Get **`TerminalRadio-win64.zip`** from [GitHub Releases](https://github.com/rcuev/terminal-radio/releases), unzip, and run **`radio.exe`**. Includes mpv.
+No Python or pip required. Get **`TerminalRadio-win64.zip`** from [GitHub Releases](https://github.com/rcuevaspantoja/terminal-radio/releases), unzip, and run **`radio.exe`**. Includes mpv.
 
 Optional: **`TerminalRadio-setup.exe`** installer (same app, adds Start Menu shortcut).
 
