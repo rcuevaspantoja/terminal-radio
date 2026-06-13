@@ -4,7 +4,9 @@ Pre-built releases for end users. Developers still use `pip install -e ".[dev]"`
 
 ## Windows
 
-**Output:** `dist/TerminalRadio/` (folder) and `dist/TerminalRadio-win64.zip`.
+**Output:** `dist/TerminalRadio/` (folder). Local build zip: `dist/TerminalRadio-win64.zip`.
+
+**GitHub Releases asset name:** `terminal-radio-<version>-windows-x64-portable.zip` (e.g. `terminal-radio-0.1.0-windows-x64-portable.zip`). Linux `.deb` will use a separate filename on the same release page later.
 
 **Requirements:** Python 3.11+, pip. Optional: [Inno Setup 6](https://jrsoftware.org/isinfo.php) for `.exe` installer.
 
