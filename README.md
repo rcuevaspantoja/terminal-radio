@@ -1,12 +1,12 @@
 # Terminal Radio
 
-Internet radio player for your terminal. Works on **Linux**, **Windows**, **macOS**, and **Termux (Android)**.
+Internet radio player for your terminal. Works on **Linux**, **MacOS**, **Windows**
 
 Search stations, save favorites, keep a play history, and listen through [mpv](https://mpv.io/). Inspired by [Reverbic](https://github.com/sewandev/Reverbic), focused on radio only.
 
 ---
 
-## Quick start
+## Quick install
 
 ```bash
 git clone <repo-url> terminal-radio
@@ -25,6 +25,10 @@ radio
 ```
 
 ---
+
+## Portable version 
+
+Portable version could be found in releases. Unzip it and run the script for running the radio program without any installation process. 
 
 ## Features
 
@@ -49,37 +53,6 @@ On Ubuntu 23.04+ and similar distros, the installer creates a **venv** automatic
 
 **WSL** with the repo under `/mnt/c/...`: the venv lives at `~/.local/share/terminal-radio/venv` (cannot sit on the Windows mount).
 
-### Termux (Android)
-
-**Recommended (when published to TUR):**
-
-```bash
-pkg install tur-repo    # once, if needed
-pkg install terminal-radio
-radio
-```
-
-**Until the `.deb` is on TUR** — install from a git checkout (no `pip install .`; avoids build failures on Android):
-
-```bash
-pkg update && pkg upgrade
-pkg install python python-pip mpv git
-git clone <repo-url> terminal-radio
-cd terminal-radio
-python scripts/install-termux.py
-radio
-```
-
-(`sh scripts/install-termux.sh` also works — do **not** run the `.sh` file with `python`.)
-
-The Termux installer pulls runtime dependencies from [TUR PyPI](https://termux-user-repository.github.io/pypi/) / [Eutalix](https://eutalix.github.io/android-pydantic-core/) and registers `radio` with `PYTHONPATH` pointing at the repo. Same TUI and shortcuts as desktop.
-
-After `git pull`, re-run `python scripts/install-termux.py` if dependencies change.
-
-Do **not** run `pip install --upgrade pip` on Termux — it breaks the `python-pip` package.
-
-Packaging recipe for maintainers: [tur/README.md](tur/README.md).
-
 ---
 
 ## Installation
@@ -91,7 +64,6 @@ All platforms use the same Python installer. The `.ps1` / `.sh` scripts are shor
 | Any | `python scripts/install.py` |
 | Windows | `.\scripts\install.ps1` |
 | Linux / macOS | `./scripts/install.sh` |
-| Termux | `python scripts/install-termux.py` |
 
 ### What the installer does
 
