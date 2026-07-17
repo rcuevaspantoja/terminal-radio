@@ -1,6 +1,6 @@
 # Terminal Radio — Documento de fundamentos
 
-> Versión: 0.1 · Estado: aprobado — Fase 5 (Termux) en progreso  
+> Versión: 0.1 · Estado: aprobado — distribución desktop en progreso
 > Origen: [reverbic-cursor-brief.md](https://github.com/) + decisión de simplificar respecto a [Reverbic](https://github.com/sewandev/Reverbic)
 
 ---
@@ -16,8 +16,8 @@ No es un port de Reverbic (Rust). Es una **reimplementación inspirada** en su e
 | # | Principio | Implicación |
 |---|-----------|-------------|
 | P1 | **Un propósito** | Solo radio por internet. Sin reproductores locales ni servicios de streaming propietarios. |
-| P2 | **Misma experiencia en todas las plataformas** | Linux, Windows y Termux comparten código y flujo TUI; se recorta funcionalidad por plataforma solo cuando el SO no la soporta (p. ej. sin `python-mpv` en Termux), nunca features “extra” de escritorio ausentes en móvil. |
-| P3 | **Instalación en 2–3 comandos** | Desktop: `python scripts/install.py`. Termux: `pkg install terminal-radio` (TUR) o `python scripts/install-termux.py` como puente. |
+| P2 | **Misma experiencia en todas las plataformas** | Linux, Windows y macOS comparten código y flujo TUI; se recorta funcionalidad solo cuando el SO no la soporta. |
+| P3 | **Instalación en 2–3 comandos** | En desarrollo: `python scripts/install.py`; para usuarios finales, releases desktop precompilados. |
 | P4 | **TUI única** | Toda interacción ocurre en la terminal. Sin bandeja del sistema ni teclas multimedia globales. |
 | P5 | **Dependencias opcionales nunca rompen** | `python-mpv` → try/except + fallback a subprocess; documentado en `--check`. |
 | P6 | **Estado único** | Un solo `PlayerService` es la fuente de verdad; la UI solo observa y envía comandos. |
@@ -102,7 +102,7 @@ No es un port de Reverbic (Rust). Es una **reimplementación inspirada** en su e
 | RNF-01 | Arranque | TUI visible en < 2 s en hardware modesto |
 | RNF-02 | Memoria | < 80 MB RAM en idle (sin contar mpv) |
 | RNF-03 | Responsividad UI | Ninguna operación de red bloquea el event loop de Textual |
-| RNF-04 | Portabilidad | Mismo entry point `terminal-radio` en las 3 plataformas |
+| RNF-04 | Portabilidad | Mismo entry point `terminal-radio` en las plataformas soportadas |
 | RNF-05 | Recuperación | Fallo de stream → estado de error visible; app no crashea |
 | RNF-06 | Accesibilidad instalación | README con bloques copy-paste por plataforma |
 | RNF-07 | Testabilidad | Capas de dominio/servicio testeables sin TUI ni mpv real |
@@ -123,12 +123,6 @@ No es un port de Reverbic (Rust). Es una **reimplementación inspirada** en su e
 **Actor:** Usuario recurrente  
 **Flujo:** Reproduciendo → `f` → tab Favorites → `r` → nuevo nombre → Enter  
 **Postcondición:** `favorites.json` actualizado; nombre custom visible en Favorites  
-
-### UC-3 — Radio en Termux (smartphone)
-
-**Actor:** Usuario móvil  
-**Flujo:** `pkg install terminal-radio` *(TUR)* o `python scripts/install-termux.py` → `radio`  
-**Postcondición:** Misma TUI y atajos que en desktop; audio vía subprocess mpv  
 
 ### UC-4 — Sesión idle con screensaver
 
@@ -201,8 +195,8 @@ class PlayerState(BaseModel):
 ```
 create_audio_backend() → AudioBackend
 │
-├─ Termux ($PREFIX set)     → MpvSubprocessBackend (siempre)
-├─ Linux / Windows
+├─ Windows                  → MpvSubprocessBackend (por defecto)
+├─ Linux / macOS
 │   ├─ python-mpv disponible → MpvBindingBackend
 │   └─ else                  → MpvSubprocessBackend
 └─ Error si mpv binary ausente en ambos caminos
@@ -271,13 +265,10 @@ terminal-radio/
 ├── pyproject.toml
 ├── README.md
 ├── scripts/
-│   ├── install.py
-│   └── install-termux.sh    # Termux (PYTHONPATH, sin pip install .)
-├── tur/
-│   └── terminal-radio/
-│       └── build.sh           # recipe TUR (.deb)
+│   └── install.py
 ├── docs/
-│   └── FOUNDATION.md          ← este documento
+│   ├── FOUNDATION.md          ← este documento
+│   └── screenshots/
 └── terminal_radio/            ← paquete Python (snake_case)
     ├── __init__.py
     ├── __main__.py
@@ -308,8 +299,8 @@ terminal-radio/
     │   ├── player_bar.py
     │   └── station_list.py
     └── platform/
-        ├── detect.py          # is_termux(), paths
-        ├── deps.py            # mpv, pip, Termux wheels
+        ├── detect.py          # paths por plataforma
+        ├── deps.py            # mpv y pip
         └── launcher.py        # shims radio / terminal-radio
 ```
 
@@ -321,7 +312,7 @@ terminal-radio/
 
 | OS | Directorio |
 |----|------------|
-| Linux / Termux | `~/.config/terminal-radio/` |
+| Linux / macOS | `~/.config/terminal-radio/` |
 | Windows | `%APPDATA%\terminal-radio\` |
 
 | Archivo | Contenido |
@@ -343,7 +334,7 @@ Env prefix: `TERMINAL_RADIO_` (ej. `TERMINAL_RADIO_VOLUME=60`).
 | Config | pydantic-settings ≥ 2.3 | |
 | Audio binding | python-mpv ≥ 1.0.7 | Opcional |
 | Audio binary | mpv | **Requisito externo obligatorio** |
-| Fuzzy | rapidfuzz ≥ 3.9 | Fase 6 (pulido) |
+| Fuzzy | rapidfuzz ≥ 3.9 | Pulido |
 | Build | hatchling | Entry point: `terminal-radio` |
 | Tooling dev | uv (recomendado) | |
 
@@ -353,15 +344,15 @@ Python: **3.11+**
 
 ## 11. Matriz de factibilidad por plataforma
 
-| Capability | Linux desktop | Windows | Termux |
-|------------|---------------|---------|--------|
-| Textual TUI | ✅ | ✅ | ✅ (terminal local) |
-| mpv subprocess | ✅ | ✅ | ✅ (`pkg install mpv`) |
-| python-mpv binding | ✅ si libmpv dev | ⚠️ requiere DLL de mpv instalado | ❌ no usar |
+| Capability | Linux desktop | Windows | macOS |
+|------------|---------------|---------|-------|
+| Textual TUI | ✅ | ✅ | ✅ |
+| mpv subprocess | ✅ | ✅ | ✅ |
+| python-mpv binding | ✅ si libmpv dev | ⚠️ requiere DLL de mpv instalado | ✅ si libmpv está disponible |
 | radio-browser API | ✅ | ✅ | ✅ |
 | Deezer/iTunes API | ✅ | ✅ | ✅ |
 | Atajos TUI (Space, q, l, …) | ✅ | ✅ | ✅ |
-| Instalación | `install.py` | `install.py` | TUR `.deb` o `install-termux.sh` |
+| Instalación de desarrollo | `install.py` | `install.py` | `install.py` |
 
 ### Riesgos identificados
 
@@ -370,9 +361,8 @@ Python: **3.11+**
 | `python-mpv` sin libmpv en PATH (Windows) | Media | Fallback automático a subprocess; `--check` documenta |
 | Streams muertos / timeouts | Alta | Timeout en play; mensaje UI; no crashear |
 | Textual + threads audio | Media | `call_from_thread` siempre; pruebas manuales tempranas |
-| Tamaño terminal pequeño (Termux) | Baja | Layout responsive mínimo; probar en 80×24 |
+| Tamaño terminal pequeño | Baja | Layout responsive mínimo; probar en 80×24 |
 | API radio-browser caída | Media | Rotación de servidores + retry 1 vez |
-| `pip install` en Termux (Python 3.13) | Media | Fase 5: `install-termux.sh` + paquete TUR `.deb` |
 
 ---
 
@@ -385,69 +375,9 @@ Python: **3.11+**
 | **2** | Búsqueda + MainScreen + PlayerBar | Flujo buscar→reproducir end-to-end |
 | **3** | Favoritos + historial + rename | Persistencia entre sesiones |
 | **4** | Lock screen + metadata | Idle timer + artista en barra |
-| **5** | Distribución Termux (TUR `.deb`) | *Pausada* — ver §12.1 |
-| **6** | Distribución desktop | Ver §12.2 |
+| **5** | Distribución desktop | Releases precompilados para Windows y Linux |
 
-### 12.1 Fase 5 — Distribución Termux (pausada)
-
-**Estado:** pausada; recipe en `tur/terminal-radio/`. Retomar cuando desktop (Fase 6) esté cerrada.
-
-**Objetivo de producto:** instalación en Android tan simple y fiable como en desktop — `pkg install terminal-radio` — sin que el usuario compile nada ni conozca pip, índices TUR/Eutalix ni `PYTHONPATH`. Mismo código que desktop; cambia solo el **canal de distribución**.
-
-**Estrategia (orden de prioridad):**
-
-| # | Camino | Rol |
-|---|--------|-----|
-| **1 (objetivo)** | **Paquete `.deb` en [TUR](https://github.com/termux-user-repository/tur)** | Distribución oficial a largo plazo |
-| 2 (puente) | `scripts/install-termux.sh` | Hasta que el `.deb` esté publicado; desarrolladores y early adopters |
-| 3 (complemento) | Wheel en índice comunitario | Solo si TUR necesita dependencias Python sin empaquetar en el `.deb` |
-
-#### Qué es el `.deb` en Termux
-
-Un `.deb` es el paquete binario que usa `pkg`. TUR construye esos paquetes en CI (GitHub Actions) para `aarch64` (y otras arches si aplica). El usuario final **nunca** ejecuta `pip install` del proyecto ni `hatchling`.
-
-Flujo usuario:
-
-```bash
-pkg install tur-repo    # si aún no tiene TUR
-pkg install mpv         # dependencia de sistema (si no va bundled)
-pkg install terminal-radio
-radio
-```
-
-#### Entregables Fase 5 (criterio de done)
-
-**A. Recipe TUR (obligatorio para cerrar la fase)**
-
-1. Carpeta `tur/terminal-radio/` en este repo *(o PR al repo `termux-user-repository/tur`)* con:
-   - `build.sh` — descarga tag/release del código, instala en `$PREFIX` vía layout fijo o `pip install --prefix=$PREFIX` con flags Termux documentados.
-   - Metadatos del paquete: versión alineada con `pyproject.toml`, `TERMUX_PKG_DEPENDS` (`python`, `mpv`, …).
-   - Dependencias Python: o bien empaquetadas como deps `.deb` en TUR, o declaradas en el recipe con install explícito desde índices TUR/Eutalix en `build.sh` (sin compilar en el dispositivo).
-2. **Icono / descripción** del paquete para `pkg search`.
-3. **CI local documentado** — cómo probar el build con `tur build terminal-radio` (o el flujo actual de TUR) antes de abrir PR.
-4. **PR aceptado** en TUR *o* instrucciones de repo mirror si el mantenimiento es propio hasta merge.
-
-**B. Puente de desarrollo (obligatorio hasta que el `.deb` esté en repos estables)**
-
-1. `scripts/install-termux.sh` — deps runtime + shim `radio` vía `python -m terminal_radio` + `PYTHONPATH`; sin `pip install .` del proyecto.
-2. README Termux: **instalación recomendada** = `pkg install terminal-radio` cuando exista; **mientras tanto** = `install-termux.sh`.
-
-**C. Documentación**
-
-1. README + FOUNDATION: requisitos Termux, paridad TUI con desktop, actualización (`pkg upgrade`).
-2. Proceso de release: tag en GitHub → bump versión en recipe TUR → rebuild en TUR.
-
-**Opcional (no bloquea Fase 5):** wheel de release en GitHub Releases para quien prefiera pip sin clonar.
-
-**No hacer en Fase 5:** fork del código; quitar pydantic solo en Android; seguir ampliando `install.py` genérico para Termux más allá de lo imprescindible.
-
-#### Referencias TUR
-
-- Repositorio: [termux-user-repository/tur](https://github.com/termux-user-repository/tur)
-- Guía de contribución: documentación del repo TUR (`CONTRIBUTING`, ejemplos de `packages/*/build.sh`)
-- PyPI comunitario (deps Python): [termux-user-repository.github.io/pypi](https://termux-user-repository.github.io/pypi/)
-
-### 12.2 Fase 6 — Distribución desktop (detalle)
+### 12.1 Fase 5 — Distribución desktop (detalle)
 
 **Objetivo:** el usuario final **no** clona el repo ni ejecuta `install.py` (pip, venv, Scoop, etc.). La app se empaqueta en **CI**; en local solo descarga y ejecuta.
 
@@ -481,14 +411,11 @@ radio
 | **D-04** | **Sin** media keys ni system tray — excluido del producto (P4) |
 | **D-05** | Licencia: **MIT** |
 | **D-06** | Tests mínimos desde Fase 0: `detect`, `config` |
-| **D-07** | Termux: distribución oficial vía **paquete TUR `.deb`** (Fase 5); `install-termux.sh` como puente |
 
 ---
 
 ## 14. Próximo paso
 
-**Fase 6 (prioridad)** — releases desktop: Windows (instalador Inno Setup) + Linux (tarball/AppImage); CI en GitHub Actions.
-
-**Fase 5 (Termux)** — pausada; recipe TUR listo en `tur/` cuando se retome.
+**Fase 5 (prioridad)** — releases desktop: Windows (instalador Inno Setup) + Linux (tarball/AppImage); CI en GitHub Actions.
 
 **Instalador dev** — `scripts/install.py` queda para desarrollo; no es la vía del usuario final.

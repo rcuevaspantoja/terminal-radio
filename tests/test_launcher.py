@@ -95,22 +95,6 @@ def test_ensure_local_bin_on_path_windows_skips_if_present(
     assert launcher.ensure_local_bin_on_path() is False
 
 
-def test_install_termux_cli_shims(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(launcher, "get_local_bin_dir", lambda: tmp_path / "bin")
-    repo = tmp_path / "terminal-radio"
-    repo.mkdir()
-    python = tmp_path / "python"
-    python.write_bytes(b"")
-
-    created = launcher.install_termux_cli_shims(python, repo)
-    shim = tmp_path / "bin" / "radio"
-    text = shim.read_text(encoding="utf-8")
-    assert "PYTHONPATH" in text
-    assert str(repo.resolve()) in text
-    assert "-m terminal_radio" in text
-    assert len(created) == 2
-
-
 def test_discover_python_from_runtime(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(launcher, "get_config_dir", lambda: tmp_path)
     python = tmp_path / "python"

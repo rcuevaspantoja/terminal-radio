@@ -27,78 +27,8 @@ def test_find_mpv_binary_windows_scoop_path(monkeypatch: pytest.MonkeyPatch, tmp
     assert deps.find_mpv_binary() == str(scoop_mpv.resolve())
 
 
-def test_mpv_install_steps_termux(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(deps, "is_termux", lambda: True)
-    steps = deps.mpv_install_steps()
-    assert len(steps) == 1
-    assert steps[0].command[:3] == ["pkg", "install", "-y"]
-
-
-def test_termux_pip_extra_index_args(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(deps, "is_termux", lambda: True)
-    args = deps.termux_pip_extra_index_args()
-    assert "--extra-index-url" in args
-    assert "termux-user-repository.github.io" in " ".join(args)
-
-
-def test_termux_pip_extra_index_args_empty_off_termux(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(deps, "is_termux", lambda: False)
-    assert deps.termux_pip_extra_index_args() == []
-
-
-def test_termux_pip_install_args_includes_no_build_isolation(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setattr(deps, "is_termux", lambda: True)
-    args = deps.termux_pip_install_args()
-    assert "--no-build-isolation" in args
-    assert "--prefer-binary" in args
-    assert "--only-binary" in args
-    assert "pydantic-core" in args
-    assert "--extra-index-url" in args
-
-
-def test_ensure_termux_python_wheels_skips_when_importable(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
-) -> None:
-    monkeypatch.setattr(deps, "is_termux", lambda: True)
-    monkeypatch.setattr(deps, "_python_can_import", lambda _py, _mod: True)
-
-    def fail_pip(*_args, **_kwargs):
-        raise AssertionError("pip should not run when pydantic_core is importable")
-
-    monkeypatch.setattr(deps.subprocess, "run", fail_pip)
-    assert deps.ensure_termux_python_wheels(tmp_path / "python") is True
-
-
-def test_ensure_termux_app_dependencies_uses_no_deps_for_settings(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
-) -> None:
-    monkeypatch.setattr(deps, "is_termux", lambda: True)
-    installed: list[str] = []
-
-    def fake_import(_python: Path, module: str) -> bool:
-        return module == "pydantic_core"
-
-    def fake_run(cmd, check=False):
-        installed.append(" ".join(cmd))
-        class Result:
-            returncode = 0
-
-        return Result()
-
-    monkeypatch.setattr(deps, "_python_can_import", fake_import)
-    monkeypatch.setattr(deps, "ensure_termux_python_wheels", lambda _py: True)
-    monkeypatch.setattr(deps.subprocess, "run", fake_run)
-
-    assert deps.ensure_termux_app_dependencies(tmp_path / "python") is True
-    settings_cmd = next(c for c in installed if "pydantic-settings" in c)
-    assert "--no-deps" in settings_cmd
-
-
 def test_mpv_install_steps_windows_prefers_scoop(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(sys, "platform", "win32")
-    monkeypatch.setattr(deps, "is_termux", lambda: False)
 
     def which(cmd: str):
         if cmd in ("scoop", "winget"):
@@ -114,7 +44,6 @@ def test_mpv_install_steps_windows_prefers_scoop(monkeypatch: pytest.MonkeyPatch
 
 def test_mpv_install_steps_linux_debian(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(sys, "platform", "linux")
-    monkeypatch.setattr(deps, "is_termux", lambda: False)
     monkeypatch.setattr(deps, "detect_linux_family", lambda: deps.LinuxFamily.DEBIAN)
     monkeypatch.setattr(deps.shutil, "which", lambda cmd: "/usr/bin/snap" if cmd == "snap" else None)
     steps = deps.mpv_install_steps()
@@ -205,7 +134,6 @@ def test_is_externally_managed(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) 
 
 def test_pip_install_steps_debian(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(sys, "platform", "linux")
-    monkeypatch.setattr(deps, "is_termux", lambda: False)
     monkeypatch.setattr(deps, "detect_linux_family", lambda: deps.LinuxFamily.DEBIAN)
     steps = deps.pip_install_steps()
     assert steps[0].command[-1] == "python3-pip"

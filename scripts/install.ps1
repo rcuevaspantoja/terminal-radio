@@ -1,4 +1,4 @@
-# Instalador Windows. Mismo install.py que Linux/Termux.
+# Instalador Windows. Mismo install.py que Linux y macOS.
 $ErrorActionPreference = "Stop"
 Set-Location (Split-Path $PSScriptRoot -Parent)
 

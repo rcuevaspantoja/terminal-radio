@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING
 
 from terminal_radio.debug.perf import perf
 from terminal_radio.platform.deps import find_mpv_binary  # re-exported
-from terminal_radio.platform.detect import is_termux
 
 __all__ = [
     "AudioBackend",
@@ -34,9 +33,7 @@ class MpvNotFoundError(RuntimeError):
     """mpv no está instalado o no está en PATH."""
 
     def __init__(self) -> None:
-        if is_termux():
-            hint = "pkg install mpv"
-        elif sys.platform == "win32":
+        if sys.platform == "win32":
             hint = "scoop bucket add extras && scoop install mpv"
         else:
             hint = "sudo apt install mpv  (or your distro equivalent)"
@@ -98,7 +95,7 @@ def get_ipc_endpoint_for_pid(pid: int) -> str:
 
 
 def _mpv_binding_enabled(prefer_binding: bool) -> bool:
-    """Windows/Termux usan subprocess por defecto (mpv aislado de la TUI)."""
+    """Windows usa subprocess por defecto (mpv aislado de la TUI)."""
     if not prefer_binding:
         return False
     if os.environ.get("TERMINAL_RADIO_MPV_BINDING", "").strip().lower() in {
@@ -107,7 +104,7 @@ def _mpv_binding_enabled(prefer_binding: bool) -> bool:
         "yes",
     }:
         return True
-    if is_termux() or sys.platform == "win32":
+    if sys.platform == "win32":
         return False
     return True
 
@@ -125,7 +122,7 @@ def create_audio_backend(
     """
     Crea el backend adecuado para la plataforma actual.
 
-    Termux / Windows → subprocess (mpv en proceso aparte).
+    Windows → subprocess (mpv en proceso aparte).
     Linux/macOS → python-mpv si está disponible, si no subprocess.
     """
     if find_mpv_binary() is None:
@@ -133,7 +130,7 @@ def create_audio_backend(
 
     from terminal_radio.audio.mpv_subprocess import MpvSubprocessBackend
 
-    if is_termux() or sys.platform == "win32":
+    if sys.platform == "win32":
         if not _mpv_binding_enabled(prefer_binding):
             return _register_backend(MpvSubprocessBackend(volume=volume))
 

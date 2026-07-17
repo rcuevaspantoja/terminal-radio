@@ -12,8 +12,6 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
-from terminal_radio.platform.detect import is_termux
-
 ENV_MPV_OVERRIDE = "TERMINAL_RADIO_MPV"
 
 # winget shinchiro.mpv instala "MPV Player" (GUI, Inno Setup) y NO expone mpv.exe
@@ -204,15 +202,6 @@ def pip_available() -> bool:
 
 def pip_install_steps() -> list[InstallStep]:
     """Pasos para instalar pip en la plataforma actual."""
-    if is_termux():
-        return [
-            InstallStep(
-                "Instalar pip con pkg (Termux)",
-                ["pkg", "install", "-y", "python-pip"],
-                verify_mpv=False,
-            )
-        ]
-
     if sys.platform == "darwin":
         return [
             InstallStep(
@@ -295,8 +284,6 @@ def default_venv_dir(repo_root: Path) -> Path:
 
 def venv_prereq_steps() -> list[InstallStep]:
     """Paquetes del sistema necesarios para crear un venv."""
-    if is_termux():
-        return []
     if sys.platform.startswith("linux"):
         family = detect_linux_family()
         if family == LinuxFamily.DEBIAN:
@@ -463,9 +450,6 @@ def mpv_install_steps() -> list[InstallStep]:
     En Windows prioriza gestores que dejan mpv.exe en PATH (Scoop, Chocolatey).
   No usa winget shinchiro.mpv (instala GUI sin CLI en PATH).
     """
-    if is_termux():
-        return [InstallStep("Instalar mpv con pkg (Termux)", ["pkg", "install", "-y", "mpv"])]
-
     if sys.platform == "darwin":
         if _command_exists("brew"):
             return [InstallStep("Instalar mpv con Homebrew", ["brew", "install", "mpv"])]
@@ -542,8 +526,6 @@ def mpv_install_steps() -> list[InstallStep]:
 
 def mpv_manual_instructions() -> str:
     """Instrucciones manuales cuando no hay gestor de paquetes detectado."""
-    if is_termux():
-        return "pkg install mpv"
     if sys.platform == "win32":
         return (
             "Instala el binario CLI de mpv (no el paquete GUI shinchiro.mpv de winget):\n"
@@ -622,152 +604,6 @@ def ensure_mpv() -> bool:
     return False
 
 
-# Wheels for packages that cannot compile on Termux (e.g. pydantic-core on Python 3.13).
-TERMUX_PYPI_EXTRA_INDEXES: tuple[str, ...] = (
-    "https://termux-user-repository.github.io/pypi/",
-    "https://eutalix.github.io/android-pydantic-core/",
-)
-
-
-def termux_pip_extra_index_args() -> list[str]:
-    """Extra pip indexes with pre-built Android wheels."""
-    if not is_termux():
-        return []
-    args: list[str] = []
-    for url in TERMUX_PYPI_EXTRA_INDEXES:
-        args.extend(["--extra-index-url", url])
-    return args
-
-
-def termux_pip_install_args() -> list[str]:
-    """
-    Pip flags for Termux.
-
-    --no-build-isolation: use pydantic-core already on disk instead of an
-    isolated build env.
-    --only-binary pydantic-core: never download the sdist (needs maturin/Rust).
-    """
-    if not is_termux():
-        return []
-    return [
-        "--no-build-isolation",
-        "--prefer-binary",
-        "--only-binary",
-        "pydantic-core",
-        *termux_pip_extra_index_args(),
-    ]
-
-
-def _termux_pip_install(
-    python: Path,
-    *packages: str,
-    no_deps: bool = False,
-) -> bool:
-    if not packages:
-        return True
-    cmd = [str(python), "-m", "pip", "install", *termux_pip_install_args()]
-    if no_deps:
-        cmd.append("--no-deps")
-    cmd.extend(packages)
-    print(f"  $ {' '.join(cmd)}")
-    result = subprocess.run(cmd, check=False)
-    return result.returncode == 0
-
-
-def _python_can_import(python: Path, module: str) -> bool:
-    result = subprocess.run(
-        [str(python), "-c", f"import {module}"],
-        capture_output=True,
-        check=False,
-    )
-    return result.returncode == 0
-
-
-def ensure_termux_python_wheels(python: Path) -> bool:
-    """
-    Pre-install pydantic-core from community wheels.
-
-    PyPI often has no wheel for aarch64-linux-android; pip then tries to
-    compile via maturin/Rust and fails on Termux.
-    """
-    if not is_termux():
-        return True
-
-    if _python_can_import(python, "pydantic_core"):
-        print("\n-> Termux: pydantic-core already installed")
-        return True
-
-    print("\n-> Termux: install pydantic-core (pre-built wheel)")
-    for index in TERMUX_PYPI_EXTRA_INDEXES:
-        cmd = [
-            str(python),
-            "-m",
-            "pip",
-            "install",
-            "--no-build-isolation",
-            "--prefer-binary",
-            "--only-binary",
-            "pydantic-core",
-            "--extra-index-url",
-            index,
-            "pydantic-core",
-        ]
-        print(f"  $ {' '.join(cmd)}")
-        result = subprocess.run(cmd, check=False)
-        if result.returncode == 0:
-            print("  [ok] pydantic-core")
-            return True
-
-    print_termux_pip_failure_hint()
-    return False
-
-
-# (import_name, pip_spec, no_deps) — install in order; pydantic before settings.
-TERMUX_APP_PIP_PACKAGES: tuple[tuple[str, str, bool], ...] = (
-    ("pydantic", "pydantic>=2.3.0", False),
-    ("pydantic_settings", "pydantic-settings>=2.3.0", True),
-    ("httpx", "httpx>=0.27.0", False),
-    ("textual", "textual>=0.80.0", False),
-    ("hatchling", "hatchling", False),
-    ("editables", "editables", False),
-)
-
-
-def ensure_termux_app_dependencies(python: Path) -> bool:
-    """Install runtime deps on Termux before editable app install."""
-    if not is_termux():
-        return True
-    if not ensure_termux_python_wheels(python):
-        return False
-
-    print("\n-> Termux: install Python dependencies")
-    for import_name, spec, no_deps in TERMUX_APP_PIP_PACKAGES:
-        if _python_can_import(python, import_name):
-            print(f"  [ok] {import_name} (already installed)")
-            continue
-        if not _termux_pip_install(python, spec, no_deps=no_deps):
-            print(f"  [error] Failed to install {spec} on Termux")
-            print_termux_pip_failure_hint()
-            return False
-        print(f"  [ok] {spec}")
-
-    return True
-
-
-def print_termux_pip_failure_hint() -> None:
-    print(
-        "\n  [error] Python dependency install failed on Termux.\n"
-        "\n  If pydantic-core is missing, try one index:\n"
-        "    pip install --no-build-isolation pydantic-core "
-        "--extra-index-url https://termux-user-repository.github.io/pypi/\n"
-        "    pip install --no-build-isolation pydantic-core "
-        "--extra-index-url https://eutalix.github.io/android-pydantic-core/\n"
-        "\n  Then: git pull && python scripts/install.py\n"
-        "\n  Do not run `pip install --upgrade pip` on Termux "
-        "(breaks the python-pip package).\n"
-    )
-
-
 def _ok(fail: bool) -> str:
     return "OK" if not fail else "FALTA"
 
@@ -798,10 +634,4 @@ def check_report() -> str:
             lines.append(f"  {' '.join(step.command)}")
         if not mpv_install_steps():
             lines.append(mpv_manual_instructions())
-    if is_termux():
-        lines.append("")
-        lines.append("Termux pip")
-        lines.append("  pydantic-core needs a pre-built wheel (see TUR / Eutalix indexes)")
-        for url in TERMUX_PYPI_EXTRA_INDEXES:
-            lines.append(f"  --extra-index-url {url}")
     return "\n".join(lines)

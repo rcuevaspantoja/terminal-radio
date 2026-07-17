@@ -9,12 +9,6 @@ from pathlib import Path
 _CONFIG_DIR_NAME = "terminal-radio"
 
 
-def is_termux() -> bool:
-    """True cuando la app corre dentro de Termux (Android)."""
-    prefix = os.environ.get("PREFIX", "")
-    return "com.termux" in prefix
-
-
 def get_config_dir() -> Path:
     """Directorio de configuración y datos persistentes."""
     if sys.platform == "win32":

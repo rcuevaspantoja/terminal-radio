@@ -22,18 +22,8 @@ def test_create_backend_raises_without_mpv(monkeypatch: pytest.MonkeyPatch) -> N
         create_audio_backend()
 
 
-def test_create_backend_termux_uses_subprocess(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("terminal_radio.audio.backend.find_mpv_binary", lambda: "/usr/bin/mpv")
-    monkeypatch.setattr("terminal_radio.audio.backend.is_termux", lambda: True)
-
-    backend = create_audio_backend(volume=40)
-    assert isinstance(backend, MpvSubprocessBackend)
-    assert backend.get_volume() == 40
-
-
 def test_create_backend_fallback_to_subprocess(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("terminal_radio.audio.backend.find_mpv_binary", lambda: "mpv")
-    monkeypatch.setattr("terminal_radio.audio.backend.is_termux", lambda: False)
 
     with patch(
         "terminal_radio.audio.mpv_binding.MpvBindingBackend",
@@ -49,7 +39,6 @@ def test_create_backend_prefers_binding_on_linux(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr("terminal_radio.audio.backend.find_mpv_binary", lambda: "mpv")
-    monkeypatch.setattr("terminal_radio.audio.backend.is_termux", lambda: False)
     monkeypatch.setattr("terminal_radio.audio.backend.sys.platform", "linux")
 
     mock_binding = MagicMock()
@@ -66,7 +55,6 @@ def test_create_backend_windows_uses_subprocess(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr("terminal_radio.audio.backend.find_mpv_binary", lambda: "mpv")
-    monkeypatch.setattr("terminal_radio.audio.backend.is_termux", lambda: False)
     monkeypatch.setattr("terminal_radio.audio.backend.sys.platform", "win32")
 
     mock_binding = MagicMock()

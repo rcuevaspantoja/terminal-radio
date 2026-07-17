@@ -2,7 +2,7 @@
 """
 Instalador multiplataforma de Terminal Radio.
 
-Mismo comando en Linux, Windows, macOS y Termux:
+Mismo comando en Linux, Windows y macOS:
 
     python scripts/install.py
 
@@ -34,11 +34,8 @@ def install_app(editable: bool = True) -> tuple[bool, Path, Path]:
     """
     from terminal_radio.platform.deps import (
         default_venv_dir,
-        ensure_termux_app_dependencies,
         ensure_venv,
         is_externally_managed,
-        is_termux,
-        termux_pip_install_args,
     )
 
     python = Path(sys.executable)
@@ -54,22 +51,8 @@ def install_app(editable: bool = True) -> tuple[bool, Path, Path]:
             print(f"  [error] {exc}")
             return False, Path(sys.executable), venv_dir
 
-    if is_termux() and not ensure_termux_app_dependencies(python):
-        return False, python, venv_dir
-
-    # Editable installs need the `editables` package (often missing on Termux).
-    use_editable = editable and not is_termux()
-    if editable and is_termux():
-        print(
-            "\n-> Termux: instalacion normal (sin -e; editable requiere "
-            "el paquete editables)"
-        )
-
-    cmd = [str(python), "-m", "pip", "install", *termux_pip_install_args()]
-    if is_termux():
-        # Runtime deps were installed above; avoid re-resolving pydantic-core.
-        cmd.append("--no-deps")
-    if use_editable:
+    cmd = [str(python), "-m", "pip", "install"]
+    if editable:
         cmd.append("-e")
     cmd.append(str(REPO_ROOT))
     print("\n-> Instalar Terminal Radio")
@@ -77,12 +60,6 @@ def install_app(editable: bool = True) -> tuple[bool, Path, Path]:
     result = subprocess.run(cmd, check=False)
     if result.returncode != 0:
         print("  [error] Fallo la instalacion de la app")
-        if is_termux():
-            print(
-                "\n  Si falla el build, asegurate de tener hatchling:\n"
-                "    pip install --no-build-isolation hatchling\n"
-                "  Luego: python scripts/install.py\n"
-            )
         return False, python, venv_dir
     print("  [ok] Terminal Radio instalado")
     if used_venv:
@@ -151,16 +128,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    from terminal_radio.platform.deps import is_termux
-
     print("Terminal Radio — instalador")
     print("=" * 40)
-
-    if is_termux():
-        print(
-            "[aviso] En Termux usa: python scripts/install-termux.py\n"
-            "  (no ejecutes install-termux.sh con python; ver tur/README.md)"
-        )
 
     if not python_version_ok():
         print(f"[error] Python {sys.version_info.major}.{sys.version_info.minor} detectado.")

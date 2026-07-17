@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# Instalador Unix (Linux, macOS, Termux). Ejecuta el mismo install.py que Windows.
+# Instalador Unix (Linux y macOS). Ejecuta el mismo install.py que Windows.
 set -e
 cd "$(dirname "$0")/.."
 if command -v python3 >/dev/null 2>&1; then

@@ -4,6 +4,10 @@ Internet radio player for your terminal. Works on **Linux**, **MacOS**, **Window
 
 Search stations, save favorites, keep a play history, and listen through [mpv](https://mpv.io/). Inspired by [Reverbic](https://github.com/sewandev/Reverbic), focused on radio only.
 
+## Screenshot
+
+![Terminal Radio main screen](docs/screenshots/main.png)
+
 ---
 
 ## Quick install
@@ -89,7 +93,6 @@ After install, run `radio` from any directory. On Windows, **new terminals** pic
 | Arch | `pacman` |
 | openSUSE | `zypper` |
 | Alpine | `apk` |
-| Termux | `pkg` |
 | macOS | Homebrew |
 
 The installer does **not** install Scoop, Homebrew, etc. — it only uses what you already have.
@@ -163,7 +166,7 @@ Data directory:
 
 | OS | Path |
 |----|------|
-| Linux / macOS / Termux | `~/.config/terminal-radio/` |
+| Linux / macOS | `~/.config/terminal-radio/` |
 | Windows | `%APPDATA%\terminal-radio\` |
 
 | File | Contents |
@@ -227,7 +230,6 @@ Architecture and roadmap: [docs/FOUNDATION.md](docs/FOUNDATION.md).
 | Search + UI | Done |
 | Favorites + history | Done |
 | Lock + track metadata | Done |
-| Termux distribution (TUR `.deb`) | In progress |
 | Polish + desktop distribution | Planned |
 
 ## License
